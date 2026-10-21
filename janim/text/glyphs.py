@@ -9,6 +9,7 @@ from functools import lru_cache
 import os
 from pathlib import Path
 import re
+import sys
 import threading
 
 import numpy as np
@@ -26,19 +27,29 @@ class FontNotFound(ValueError):
 
 @lru_cache(maxsize=1)
 def _font_catalog():
-    """Use BaseDirs' Unix roots and FreeTypeAbstraction's breadth-first order."""
+    """Use BaseDirs' roots and FreeTypeAbstraction's order: breadth-first on Linux, the five flat folders on macOS."""
     import freetype
 
-    roots = [
-        Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "fonts",
-        Path.home() / ".fonts",
-        *(Path(path) / "fonts" for path in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":")),
-    ]
-    folders = list(dict.fromkeys(path for path in roots if path.is_dir()))
-    index = 0
-    while index < len(folders):
-        folders.extend(path for path in sorted(folders[index].iterdir()) if path.is_dir())
-        index += 1
+    if sys.platform == "darwin":
+        roots = [
+            Path.home() / "Library/Fonts",
+            Path("/Library/Fonts"),
+            Path("/System/Library/Fonts"),
+            Path("/System/Library/Fonts/Supplemental"),
+            Path("/Network/Library/Fonts"),
+        ]
+        folders = [path for path in roots if path.is_dir()]
+    else:
+        roots = [
+            Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share") / "fonts",
+            Path.home() / ".fonts",
+            *(Path(path) / "fonts" for path in (os.environ.get("XDG_DATA_DIRS") or "/usr/local/share:/usr/share").split(":")),
+        ]
+        folders = list(dict.fromkeys(path for path in roots if path.is_dir()))
+        index = 0
+        while index < len(folders):
+            folders.extend(path for path in sorted(folders[index].iterdir()) if path.is_dir())
+            index += 1
     extra = os.environ.get("FREETYPE_ABSTRACTION_FONT_PATH")
     if extra:
         folders.append(Path(extra))
