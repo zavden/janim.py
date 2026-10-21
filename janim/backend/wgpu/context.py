@@ -1,4 +1,4 @@
-"""Vulkan device ownership and routing.
+"""GPU device ownership and routing: Vulkan on Linux, Metal on macOS.
 
 The native library is the one bundled with the `wgpu` package, unless the
 environment variable WGPU_LIB_PATH names another file.
@@ -9,10 +9,13 @@ import logging
 import os
 from pathlib import Path
 import re
+import sys
 import threading
 
 
 NATIVE_VERSION = (24, 0)
+# The one backend the instance opens: Metal on macOS, Vulkan elsewhere.
+BACKEND = "Metal" if sys.platform == "darwin" else "Vulkan"
 GPUInfo = namedtuple("GPUInfo", "renderer slug backend version kind")
 _LOCK = threading.RLock()
 _BINDING = None
@@ -107,7 +110,7 @@ def choose_adapter(adapters, *, headless=False, name=""):
         for a in adapters
     )
     if not adapters:
-        raise RuntimeError("no Vulkan adapter is available")
+        raise RuntimeError(f"no {BACKEND} adapter is available")
     if name:
         for adapter in adapters:
             if name.lower() in adapter.info["device"].lower():

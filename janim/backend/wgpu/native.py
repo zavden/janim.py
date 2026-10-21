@@ -7,7 +7,7 @@ bridge; resources and render descriptors use wgpu-py's regular classes.
 
 import os
 
-from .context import _BINDING
+from .context import _BINDING, BACKEND
 
 if _BINDING is None:
     raise RuntimeError("load the native bridge through context._binding() first")
@@ -18,6 +18,10 @@ from wgpu.backends.wgpu_native._ffi import ffi, lib
 
 
 _INSTANCE = None
+# wgpu.h: WGPUInstanceBackend_Vulkan = 1 << 0, _Metal = 1 << 2; cffi ABI mode
+# cannot expose this header's static const WGPUFlags as integer constants.
+_INSTANCE_BACKENDS = {"Vulkan": 1 << 0, "Metal": 1 << 2}
+_BACKEND_TYPES = {"Vulkan": lib.WGPUBackendType_Vulkan, "Metal": lib.WGPUBackendType_Metal}
 NATIVE_CALLS = (
     "wgpuCreateInstance",
     "wgpuAdapterRequestDevice",
@@ -46,7 +50,7 @@ def initialize_instance():
     if _INSTANCE is not None:
         return
     if _helpers._the_instance is not None:
-        raise RuntimeError("a graphics instance was opened before Janim's Vulkan gate")
+        raise RuntimeError(f"a graphics instance was opened before Janim's {BACKEND} gate")
     levels = {
         "off": lib.WGPULogLevel_Off,
         "error": lib.WGPULogLevel_Error,
@@ -59,14 +63,12 @@ def initialize_instance():
     _api.libf.wgpuSetLogLevel(levels.get(os.environ.get("JANIM_WGPU_LOG", "warn").lower(), levels["warn"]))
     extras = ffi.new("WGPUInstanceExtras *")
     extras.chain.sType = lib.WGPUSType_InstanceExtras
-    # wgpu.h: WGPUInstanceBackend_Vulkan = 1 << 0; cffi ABI mode cannot
-    # expose this header's static const WGPUFlags as an integer constant.
-    extras.backends = 1 << 0
+    extras.backends = _INSTANCE_BACKENDS[BACKEND]
     descriptor = ffi.new("WGPUInstanceDescriptor *")
     descriptor.nextInChain = ffi.cast("WGPUChainedStruct *", extras)
     instance = _api.libf.wgpuCreateInstance(descriptor)
     if instance == ffi.NULL:
-        raise RuntimeError("could not create the Vulkan instance")
+        raise RuntimeError(f"could not create the {BACKEND} instance")
     _helpers._the_instance = instance
     _INSTANCE = instance
 
@@ -74,7 +76,7 @@ def initialize_instance():
 def _adapter_information(info):
     # Native 24.0.0.1 implements a void return despite the header's WGPUStatus.
     # Its return register is undefined; read only the filled struct.
-    if info.backendType != lib.WGPUBackendType_Vulkan:
+    if info.backendType != _BACKEND_TYPES[BACKEND]:
         raise wgpu.GPUValidationError("adapter information is missing or invalid")
     result = {
         key: _api.from_c_string_view(getattr(info, key))
@@ -86,7 +88,7 @@ def _adapter_information(info):
         vendor_id=int(info.vendorID),
         device_id=int(info.deviceID),
         adapter_type=_api.enum_int2str["AdapterType"].get(info.adapterType, "Unknown"),
-        backend_type="Vulkan",
+        backend_type=BACKEND,
     )
     return result
 
@@ -275,7 +277,7 @@ def wait(gpu, index=None):
 # wgpu-py 0.21 builds a surface only inside GPUCanvasContext, whose policy
 # (present mode by `_vsync`, opaque alpha, statuses that raise) is not the
 # contract Janim needs. The surface itself comes from the binding's own helper,
-# for the two surface source types (Wayland and X11); configure, acquire and
+# for the three surface source types (Wayland, X11 and a CAMetalLayer); configure, acquire and
 # present go through the library like every other v24 call here. An acquire on
 # an UNCONFIGURED surface aborts the process in v24: window.py keeps the
 # `configured` flag.
