@@ -10,6 +10,77 @@ por delante: ya elige Metal. Las dos bibliotecas comparten los shaders WGSL y
 la versión mayor de wgpu-native (v24), así que lo que aprendas en una sirve
 para la otra. Si tienes los dos clones, lee también ese fichero.
 
+## Resultado · 2026-10-21, macOS 26.6.2, Apple M1, Python 3.14.7 (Homebrew)
+
+Probado en el Mac, sección por sección. Casi todo lo previsto era cierto; lo
+que cambia está marcado.
+
+- **§1 · Preparar.** Confirmado. `brew install --cask font-dejavu` deja las
+  DejaVu en `~/Library/Fonts`. Las lecciones que piden «Liberation Serif» o
+  «Liberation Mono» (`c1_03/03_text.py` entre ellas) dan el `FontNotFound`
+  esperado si no se instala `font-liberation`. LaTeX y `dvisvgm` de MacTeX
+  en `/Library/TeX/texbin` funcionan desde `bin/janim` sin más.
+- **§2 · Instalar.** Confirmado: `import wgpu` moría sin `rubicon-objc`. Está
+  en `[tool.janim.bootstrap]` con el marcador `sys_platform == 'darwin'`; el
+  wheel de wgpu trae wgpu-native 24.0.0.2 y pasa `NATIVE_VERSION`.
+- **§3 · Metal.** Confirmado. `context.BACKEND` (`"Metal"` en darwin,
+  `"Vulkan"` en el resto) manda en `native.py`: el bit de la instancia, el
+  `backendType` que acepta `_adapter_information` y los mensajes. El
+  adaptador es «Apple M1 · IntegratedGPU · Metal», con `vendor`,
+  `architecture` y `description` vacíos (slug `apple`, versión `unknown`),
+  alineaciones 256/256 y `float32-filterable`. `JANIM_HEADLESS=1` da el error
+  con la lista de adaptadores, como se esperaba. Renders correctos a la vista:
+  `c1_01/01`, `c1_03/04_latex`, `c1_03/06_tex_transformations`,
+  `demo/03_portals`, `demo/07_text_mask`, `c2_03/03_camera_3d`. Determinismo
+  entre procesos: `03_portals` (140 frames) y `07_text_mask` (141) dan hashes
+  idénticos en dos procesos.
+- **§4 · Fuentes.** Confirmado contra el código de FreeTypeAbstraction
+  (`__init__`: recursión solo en `Sys.isunix() && !Sys.isapple()`) y BaseDirs
+  (`darwin.jl`): en macOS, las cinco carpetas planas y en ese orden. El
+  catálogo del M1 tiene 463 caras; «DejaVu Sans» resuelve a
+  `~/Library/Fonts/DejaVuSans.ttf`.
+- **§5 · Lo demás.** Confirmado. `_headless_env` devuelve falso en darwin;
+  `JANIM_GLFW_PLATFORM` admite `null` o `cocoa` en macOS (y sigue admitiendo
+  `null`, `wayland` o `x11` en Linux, con el mismo mensaje). `readlink -f`
+  funciona en `bin/janim`.
+- **§6 · La ventana en vivo.** Funciona con menos de lo previsto: bastó
+  devolver `{"platform": "cocoa", "window": NSWindow}` en `native_handles`
+  y aceptar `cocoa` en `create_window`; la rama darwin de wgpu-py crea la
+  `CAMetalLayer`. La superficie ofrece `bgra8unorm-srgb` primero (se usa
+  `bgra8unorm`), Fifo e Immediate, y CopySrc. **Retina:** wgpu-py deja
+  `contentsScale = 1.0`; wgpu-native sí pone `drawableSize` al tamaño del
+  framebuffer (2560×1440 sobre 1280×720 puntos), así que no sale «un cuarto
+  de la ventana». `glfw.sync_content_scale` pone `contentsScale =
+  backingScaleFactor` (2.0) al crear la surface y al reconfigurar, como hace
+  GLFW con sus surfaces de Vulkan. Medido con `present_readback`: cada píxel
+  del frame ocupa exactamente un bloque 2×2 del swapchain. Dos previews
+  seguidas abren y cierran limpias; el drenaje de foco de Wayland no estorba
+  (termina sin agotar el tope). El hilo del playhead no toca GLFW, no hubo
+  que cambiar nada. **No probado a mano:** teclas y ratón (este proceso no
+  pudo enviar pulsaciones ni capturar la pantalla por permisos de macOS);
+  los callbacks usan coordenadas lógicas de forma consistente, así que no se
+  espera el problema del §6.7.
+- **§7 · Python contra Julia.** Hecho en el mismo Mac, con los dos arneses
+  del §6 de Janim.jl. Cuatro demos (`01`, `03`, `04`, `07`) salieron
+  idénticas byte a byte a la primera; `11_chase_camera` difería en los 220
+  frames, y **las tres hipótesis de esta sección eran falsas**: las fuentes
+  resolvían al mismo fichero, la geometría de la CPU (`knot`, `atan2`,
+  rotaciones) y cada byte subido a la GPU (puntos, normales, índices,
+  uniformes) eran idénticos en las dos bibliotecas. La diferencia estaba en
+  los píxeles de los tres `Torus` (±1 a ±4 de 255) y la causa es que Python
+  fusiona en un solo `draw_indexed` las mallas consecutivas que comparten
+  pipeline, bloque de uniformes y textura (`render.py`, `_record_commands`),
+  mientras Julia emite una llamada por malla: en Metal el color iluminado
+  que se interpola sobre un triángulo cambia en el último bit según la
+  llamada que lo lleva (partir una sola malla en dos llamadas ya mueve
+  píxeles; con `@interpolate(flat)` no), y en RADV no. El arreglo está en
+  `render.py`: `_MERGE_MESH_DRAWS = BACKEND != "Metal"`, una llamada por
+  malla en Metal, como en Janim.jl. En Linux `BACKEND` es Vulkan y el bucle
+  de fusión es el mismo de hoy. Con el arreglo, las cinco demos dan frames
+  idénticos entre Python y Julia (140, 140, 180, 141 y 220), y las cuatro
+  que ya coincidían no cambiaron ni un byte.
+- **Lo que no cambió:** `live.py`, `cli.py`, `tex.py`, `video.py`.
+
 ## 0 · Reglas de trabajo
 
 - **El objetivo** es que en un M1 funcionen el render a fichero, la CLI

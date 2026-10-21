@@ -113,10 +113,11 @@ la escena, de modo que el beneficio crece con la duración del vídeo.
 
 `janim escena.py` (o `preview`) abre una ventana GLFW **sin API gráfica**
 (no redimensionable, al tamaño del render) y presenta sobre ella por una
-surface WebGPU creada con sus handles nativos (Wayland o X11; con
-`JANIM_GLFW_PLATFORM=x11` se fuerza X11; bajo `JANIM_HEADLESS=1` o sin display
-no hay surface y solo se tratan eventos). A 1:1 la ventana recibe los bytes
-del frame tal cual los produce `render_frame`.
+surface WebGPU creada con sus handles nativos (Wayland o X11 en Linux, Cocoa
+en macOS; con `JANIM_GLFW_PLATFORM=x11` se fuerza X11; bajo `JANIM_HEADLESS=1`
+o sin display no hay surface y solo se tratan eventos). A 1:1 la ventana
+recibe los bytes del frame tal cual los produce `render_frame`; en una
+pantalla Retina, a 2:1, cada píxel del frame ocupa un bloque de 2×2.
 
 Teclas: `Esc`/`q` salir · `espacio` pausa · `.`/`,` un frame · `←`/`→` ∓1 s ·
 `[`/`]` animación · `PgUp`/`PgDn` checkpoint · `Home` al frame 1 · `c` parar

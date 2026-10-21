@@ -3,7 +3,7 @@
 > A mathematical animation engine with Manim's API — `class X(Scene)`,
 > `self.play`, `Circle`, `Transform`, `m.animate` — on its own WebGPU
 > renderer, with deterministic frames: the same scene gives the same pixels on
-> every run on the same Vulkan route (RADV on the GPU, lavapipe on the CPU).
+> every run on the same route (RADV or lavapipe on Linux, Metal on macOS).
 > Formulas through real LaTeX, a layer compositor with masks and seventeen
 > effects, 3D with a quaternion camera, a Tsit5 integrator and forward-mode
 > duals, a CLI with a live window, and a render farm across processes. Pure
@@ -56,8 +56,9 @@ only one, or the one you name as `file.py:Demo`) and call its `construct`.
   (no daemon, no frame cache): a late frame costs its whole prefix. For many
   frames of a long scene, render the mp4 once and cut them out with
   `ffmpeg -i out.mp4 -vf "select='eq(n,K)'" -vframes 1 fK.png`.
-- `JANIM_HEADLESS=1` picks the CPU adapter (lavapipe, slug `llvmpipe`); unset,
-  the native Vulkan GPU; `JANIM_ADAPTER=<substring>` picks by name and wins.
+- `JANIM_HEADLESS=1` picks the CPU adapter (lavapipe, slug `llvmpipe`; Linux
+  only, macOS has none); unset, the native GPU (Vulkan on Linux, Metal on
+  macOS); `JANIM_ADAPTER=<substring>` picks by name and wins.
   `gpu_info()` says which one ran. Rendering to a file opens no window, and
   `import janim` opens no device at all.
 
@@ -600,8 +601,8 @@ bin/janim codecs                      # what the CLI's ffmpeg can do
 - `samples=0` means 4× MSAA (the fill's antialiasing); `samples=1` is the
   aliased control. `transparent=True` writes RGBA PNG or ProRes `.mov`. A
   scene with no `play`/`wait` writes a PNG instead of an empty video.
-- RADV and lavapipe give two different pictures, each reproducible: parity is
-  WITHIN a route. `driver_header(gpu_info())` names the route that ran.
+- RADV, lavapipe and Metal give different pictures, each reproducible: parity
+  is WITHIN a route. `driver_header(gpu_info())` names the route that ran.
 
 ## Examples and lessons
 

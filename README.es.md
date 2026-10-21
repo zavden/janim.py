@@ -13,8 +13,9 @@ aritmética no depende de la libm del sistema.
 
 ## Requisitos
 
-- **Linux** con un driver Vulkan (Mesa RADV, lavapipe u otro). macOS y Windows
-  todavía no están soportados.
+- **Linux** con un driver Vulkan (Mesa RADV, lavapipe u otro), o **macOS 14 o
+  posterior en Apple Silicon**, donde Janim dibuja con Metal (probado en
+  macOS 26.6, Apple M1). Windows todavía no está soportado.
 - **Python 3.14.**
 - **`ffmpeg`** en el `PATH`, para escribir vídeo.
 - **`latex` y `dvisvgm`** en el `PATH`, para `Tex` y `MathTex`.
@@ -29,6 +30,18 @@ scripts/bootstrap.sh        # crea .venv/ con numpy, wgpu, glfw y freetype-py
 ```
 
 `PYTHON=/ruta/a/python3.14 scripts/bootstrap.sh` elige otro intérprete.
+
+En macOS, Homebrew da todo menos LaTeX:
+
+```bash
+brew install python@3.14 ffmpeg
+brew install --cask font-dejavu          # la fuente de los ejemplos, en ~/Library/Fonts
+PYTHON=python3.14 scripts/bootstrap.sh   # instala también rubicon-objc, que wgpu necesita en macOS
+```
+
+`Tex` necesita MacTeX o BasicTeX más `dvisvgm` (`sudo tlmgr install dvisvgm`
+si falta); los dos quedan en `/Library/TeX/texbin`, que debe estar en el
+`PATH`.
 
 ## Una escena mínima
 
@@ -67,7 +80,7 @@ La calidad fija la resolución y los fps a la vez:
 | `-qh` | 1920×1080 | 60 |
 
 Por defecto se renderiza en la GPU. `JANIM_HEADLESS=1` delante de la orden
-renderiza por CPU (lavapipe).
+renderiza por CPU (lavapipe; solo en Linux, macOS no tiene adaptador de CPU).
 
 ## Ejemplos
 
@@ -91,7 +104,9 @@ bin/janim render examples/demo/03_portals.py -ql
 
 ## Limitaciones conocidas
 
-- **Solo Linux** por ahora.
+- **Solo Linux y macOS (Apple Silicon).** Windows no está soportado. Los
+  frames son reproducibles dentro de cada ruta (RADV, lavapipe o Metal), y
+  Metal puede diferir de Linux en un píxel en algunos bordes.
 - **No hay desenfoque de movimiento en el vídeo.** `Scene` no acepta
   `motion_blur` ni `shutter`, y la CLI rechaza `--motion-blur`. Lo que sí
   existe es `render_frame_motion`, que promedia varias exposiciones en un solo

@@ -13,8 +13,9 @@ arithmetic does not depend on the system's libm.
 
 ## Requirements
 
-- **Linux** with a Vulkan driver (Mesa RADV, lavapipe or another). macOS and
-  Windows are not supported yet.
+- **Linux** with a Vulkan driver (Mesa RADV, lavapipe or another), or **macOS
+  14 or later on Apple Silicon**, where Janim draws with Metal (tested on
+  macOS 26.6, Apple M1). Windows is not supported yet.
 - **Python 3.14.**
 - **`ffmpeg`** on the `PATH`, to write video.
 - **`latex` and `dvisvgm`** on the `PATH`, for `Tex` and `MathTex`.
@@ -29,6 +30,18 @@ scripts/bootstrap.sh        # creates .venv/ with numpy, wgpu, glfw and freetype
 ```
 
 `PYTHON=/path/to/python3.14 scripts/bootstrap.sh` picks another interpreter.
+
+On macOS, Homebrew provides everything but LaTeX:
+
+```bash
+brew install python@3.14 ffmpeg
+brew install --cask font-dejavu          # the examples' font, into ~/Library/Fonts
+PYTHON=python3.14 scripts/bootstrap.sh   # also installs rubicon-objc, which wgpu needs on macOS
+```
+
+`Tex` needs MacTeX or BasicTeX plus `dvisvgm` (`sudo tlmgr install dvisvgm`
+if it is missing); both live in `/Library/TeX/texbin`, which must be on the
+`PATH`.
 
 ## A minimal scene
 
@@ -67,7 +80,7 @@ The quality flag sets resolution and frame rate together:
 | `-qh` | 1920×1080 | 60 |
 
 Rendering runs on the GPU by default. Prefix a command with `JANIM_HEADLESS=1`
-to render on the CPU (lavapipe).
+to render on the CPU (lavapipe; Linux only, macOS has no CPU adapter).
 
 ## Examples
 
@@ -94,7 +107,9 @@ them, are written in Spanish.
 
 ## Known limitations
 
-- **Linux only** for now.
+- **Linux and macOS (Apple Silicon) only.** Windows is not supported. Frames
+  are reproducible within a route (RADV, lavapipe or Metal), and Metal can
+  differ from Linux by a pixel at some edges.
 - **No motion blur in video.** `Scene` takes no `motion_blur` or `shutter`,
   and the CLI rejects `--motion-blur`. What exists is `render_frame_motion`,
   which averages several exposures into a single frame. The lessons in

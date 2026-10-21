@@ -40,7 +40,8 @@ bin/janim frame examples/tutorial/c1_01_basics/06_layers.py 40 f.png    # one fr
 bin/janim render examples/tutorial/c1_02_config_and_assets/07_multiscene.py:Intro -ql   # one scene of several
 ```
 
-`JANIM_HEADLESS=1` renders on the CPU adapter (lavapipe) instead of the GPU.
+`JANIM_HEADLESS=1` renders on the CPU adapter (lavapipe) instead of the GPU
+(Linux only: macOS has no CPU adapter).
 
 A lesson marks the moment worth looking at in two constants: `PREVIEW_T` (the
 second worth looking at, default 1.0) and `PREVIEW_MOTION` (sub-exposures, for
