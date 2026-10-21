@@ -1,12 +1,13 @@
 """The window system: GLFW through the pinned system library, only for a preview.
 
 Nothing here is imported by a render to a file; importing `glfw` initialises
-nothing, and the platform (Null, Wayland or X11) is chosen ONCE, before the
+nothing, and the platform (Null, Wayland, X11 or Cocoa) is chosen ONCE, before the
 first window.
 """
 
 import os
 from pathlib import Path
+import sys
 import threading
 import time
 
@@ -50,6 +51,9 @@ def _glfw():
 def _headless_env():
     if os.environ.get("JANIM_HEADLESS") == "1":
         return True
+    if sys.platform == "darwin":
+        # Cocoa sets no DISPLAY variable; the window server is always there.
+        return False
     return not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
 
@@ -70,9 +74,12 @@ def ensure_window_system():
         glfw.ERROR_REPORTING = "exception"
         requested = os.environ.get("JANIM_GLFW_PLATFORM", "").lower()
         platforms = {"null": glfw.PLATFORM_NULL, "wayland": glfw.PLATFORM_WAYLAND, "x11": glfw.PLATFORM_X11}
+        if sys.platform == "darwin":
+            platforms = {"null": glfw.PLATFORM_NULL, "cocoa": glfw.PLATFORM_COCOA}
         if requested:
             if requested not in platforms:
-                raise ValueError(f"JANIM_GLFW_PLATFORM={requested!r}: expected null, wayland or x11")
+                expected = ", ".join(list(platforms)[:-1]) + " or " + list(platforms)[-1]
+                raise ValueError(f"JANIM_GLFW_PLATFORM={requested!r}: expected {expected}")
             platform = platforms[requested]
         elif _headless_env():
             platform = glfw.PLATFORM_NULL
@@ -86,7 +93,7 @@ def ensure_window_system():
             _point_xkb_at_x_locale()
         if not glfw.init():
             raise RuntimeError(f"glfwInit failed on {glfw.get_version_string().decode()}")
-        names = {glfw.PLATFORM_WAYLAND: "wayland", glfw.PLATFORM_X11: "x11", glfw.PLATFORM_NULL: "null"}
+        names = {glfw.PLATFORM_WAYLAND: "wayland", glfw.PLATFORM_X11: "x11", glfw.PLATFORM_COCOA: "cocoa", glfw.PLATFORM_NULL: "null"}
         _STATE["platform"] = names.get(glfw.get_platform(), "other")
         _STATE["null"] = _STATE["platform"] == "null"
         _STATE["ready"] = True
@@ -94,7 +101,7 @@ def ensure_window_system():
 
 
 def window_platform():
-    """`wayland`, `x11`, `null`, `other` or `none` before the first window."""
+    """`wayland`, `x11`, `cocoa`, `null`, `other` or `none` before the first window."""
     return _STATE["platform"]
 
 
@@ -124,7 +131,30 @@ def native_handles(window):
         return {"platform": "wayland", "window": int(glfw.get_wayland_window(window.handle)), "display": int(glfw.get_wayland_display())}
     if platform == "x11":
         return {"platform": "x11", "window": int(glfw.get_x11_window(window.handle)), "display": int(glfw.get_x11_display())}
+    if platform == "cocoa":
+        # The NSWindow; wgpu-py puts a CAMetalLayer on its contentView.
+        return {"platform": "cocoa", "window": int(glfw.get_cocoa_window(window.handle))}
     raise ValueError(f"no surface source for the {platform} platform")
+
+
+def sync_content_scale(window):
+    """Cocoa: give the CAMetalLayer the window's backing scale, as GLFW does for its own Vulkan surfaces.
+
+    wgpu-py creates the layer with contentsScale 1.0; on Retina the framebuffer
+    (and the drawable) is twice the window, and the layer must say so.
+    """
+    if _STATE["platform"] != "cocoa":
+        return False
+    import ctypes
+
+    from rubicon.objc.api import ObjCInstance
+
+    ns_window = ObjCInstance(ctypes.c_void_p(int(_glfw().get_cocoa_window(window.handle))))
+    layer = ns_window.contentView.layer
+    if layer is None:
+        return False
+    layer.setContentsScale(ns_window.backingScaleFactor)
+    return True
 
 
 def framebuffer_size(window):

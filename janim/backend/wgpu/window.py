@@ -1,7 +1,7 @@
 """The preview's presenter: a WebGPU surface on a GLFW window.
 
-A surface exists only for a VISIBLE window on a native platform (Wayland or
-X11); hidden windows and the Null platform draw into the render target and
+A surface exists only for a VISIBLE window on a native platform (Wayland, X11
+or Cocoa); hidden windows and the Null platform draw into the render target and
 `present` only pumps events. The pass is ManimGL's present.wgsl: one triangle
 from `vertex_index`, nearest sampling, so at 1:1 the surface receives the
 bytes of the frame (observable by reading the surface texture back through
@@ -41,6 +41,8 @@ class GPUPresenter:
         self.window = window
         self.platform = platform
         self.surface = native.create_surface(window_system.native_handles(window))
+        if platform == "cocoa":
+            window_system.sync_content_scale(window)
         self.format = None
         self.width = self.height = 0
         self.configured = False
@@ -98,6 +100,8 @@ class GPUPresenter:
         width, height = window_system.framebuffer_size(self.window)
         if not (width > 0 and height > 0):
             return False
+        if self.platform == "cocoa":
+            window_system.sync_content_scale(self.window)
         self.configure(width, height)
         self.reconfigures += 1
         SURFACE_RECONFIGS += 1
@@ -219,7 +223,7 @@ def create_window(width, height, *, title="Janim", visible=True):
     window = window_system.create_window_noapi(width, height, title=title, visible=visible)
     platform = window_system.window_platform()
     if visible and not window_system.null_platform():
-        if platform in ("wayland", "x11"):
+        if platform in ("wayland", "x11", "cocoa"):
             try:
                 presenter = GPUPresenter(_shared_gpu(), window, platform)
                 presenter.configure(*window_system.framebuffer_size(window))
@@ -229,7 +233,7 @@ def create_window(width, height, *, title="Janim", visible=True):
                 raise
         else:
             window_system.close_context(window)
-            raise RuntimeError(f"the preview surface on the {platform} platform is not written (Wayland and X11 are): render to a file")
+            raise RuntimeError(f"the preview surface on the {platform} platform is not written (Wayland, X11 and Cocoa are): render to a file")
     return window
 
 
