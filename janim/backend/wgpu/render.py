@@ -10,7 +10,7 @@ from janim.core.camera import Camera, camera_uniforms
 from janim.core.gradients import active_fill_gradient, fill_gradient_opacity
 from janim.core.mobject import Mobject, VMobject
 from janim.png import save_rgb_png
-from .context import _binding, _shared_gpu
+from .context import BACKEND, _binding, _shared_gpu
 from .pipelines import PipelineCache
 from .records import DrawCache, RunRecord, TextureCache, VertexArena
 from .targets import GPUTarget, create_staging, padded_bytes_per_row, read_rgb_topdown, read_rgba_topdown
@@ -27,6 +27,10 @@ from .uniforms import (
 
 
 _DISABLE_DRAW_BATCH = False
+# Metal (Apple M1) lights a triangle differently in the last bit depending on which
+# draw call carries it, so a merged `draw_indexed` is not the same picture as one draw
+# per mesh there. On Metal every mesh is its own draw, as in Janim.jl.
+_MERGE_MESH_DRAWS = BACKEND != "Metal"
 _DISABLE_DRAW_CACHE = False
 JOINT_CODES = {"no_joint": 0, "auto": 1, "bevel": 2, "miter": 3}
 
@@ -440,7 +444,7 @@ class GPURenderVM:
                 draw(encoder_id, 4, 1, command.first, 0)
                 continue
             first, count = command.first, command.vertices if store.indices is not None else command.instances
-            while i < total:
+            while _MERGE_MESH_DRAWS and i < total:
                 following = commands[i]
                 if (
                     following.kind != kind
