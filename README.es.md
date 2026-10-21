@@ -101,5 +101,6 @@ bin/janim render examples/demo/03_portals.py -ql
 ## Licencia
 
 MIT, ver [`LICENSE`](LICENSE). Janim porta código de ManimGL, Manim Community,
-Julia y varios paquetes de Julia, todos con licencia MIT: los avisos están en
+Julia, varios paquetes de Julia y el paquete `isosurfaces`, todos con licencia
+MIT: los avisos están en
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

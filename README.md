@@ -104,5 +104,6 @@ them, are written in Spanish.
 ## License
 
 MIT, see [`LICENSE`](LICENSE). Janim ports code from ManimGL, Manim Community,
-Julia and several Julia packages, all MIT-licensed: their notices are in
+Julia, several Julia packages and the `isosurfaces` package, all
+MIT-licensed: their notices are in
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

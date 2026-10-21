@@ -17,6 +17,7 @@ at the end of this file.
 | [DiffEqBase.jl](https://github.com/SciML/DiffEqBase.jl) | the error norm and residuals of `janim/ode/tsit5.py` | Copyright (c) 2016-2020: ChrisRackauckas, Julia Computing |
 | [SciMLBase.jl](https://github.com/SciML/SciMLBase.jl) | the integrator interface of `janim/ode/tsit5.py` | Copyright (c) 2021 Chris Rackauckas and contributors |
 | [Colors.jl](https://github.com/JuliaGraphics/Colors.jl) | the named-color table of `janim/core/_named_colors.py` | Copyright (c) 2012-2013: Daniel Jones, Jeff Bezanson, and other contributors |
+| [isosurfaces](https://github.com/jared-hughes/isosurfaces) | the quadtree isoline tracer of `ImplicitFunction` in `janim/core/implicit.py` | Copyright (c) 2024 Jared Hughes |
 
 ## MIT License
 
