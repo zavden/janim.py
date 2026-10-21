@@ -12,4 +12,9 @@ dependencies = [
 ]
 
 [tool.janim.bootstrap]
-dependencies = ["cffi==2.1.1", "pycparser==3.0", "sniffio==1.3.1"]
+dependencies = [
+    "cffi==2.1.1",
+    "pycparser==3.0",
+    "sniffio==1.3.1",
+    "rubicon-objc==0.5.7; sys_platform == 'darwin'",
+]
