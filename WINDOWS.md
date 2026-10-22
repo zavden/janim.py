@@ -15,6 +15,61 @@ también el `MACOS.md` de este repo: el port a macOS es el precedente y casi
 todo lo que tocó (backend, plataforma de GLFW, fuentes) se vuelve a tocar
 aquí, en el mismo sitio.
 
+## Resultado · 2026-10-21, Windows 11 Home 25H2, Ryzen 7 9700X, Radeon RX 9070 XT, Python 3.14.9 (uv)
+
+**Hecho hasta el §3.** Instalación, DX12 y un frame a PNG, comprobados en
+esta máquina el 2026-10-21. El vídeo (§4), las fuentes (§5), lo demás de Unix
+(§6), la ventana (§7) y Python contra Julia (§8) siguen pendientes.
+
+- **§1 · Preparar.** Python llegó con uv (`uv python install 3.14` deja
+  `~\.local\bin\python3.14.exe`), no con el instalador de python.org: no hay
+  `py`, y `python` sigue siendo el atajo de la Store. ffmpeg 9.0.2 y MiKTeX
+  26.5 (`latex`, `dvisvgm` 3.6, `AutoInstall=1`) con winget. Git 2.56 ya
+  estaba, con `core.autocrlf=true`: los dos primeros clones salieron con
+  CRLF, como se preveía; `git clone -c core.autocrlf=input` lo evita. DejaVu
+  2.37 y Liberation 2.1.5 instaladas para el usuario
+  (`%LOCALAPPDATA%\Microsoft\Windows\Fonts`, registradas en HKCU).
+- **§2 · Instalar.** Confirmado: las wheels existen, y `import wgpu` pasa
+  `NATIVE_VERSION` sin instalar nada más. `bootstrap.sh` y `bin/janim` no
+  sirven, como se preveía; el venv se hizo a mano con uv (`uv venv --python
+  3.14 .venv`, `uv pip install --only-binary :all: --no-deps` con las
+  versiones de `pyproject.toml`, y el `janim.pth`), que es lo que documenta
+  el README. `bootstrap.cmd` y `bin/janim.cmd` siguen sin escribir.
+  **Falso:** que lo primero en fallar fuese el backend. Lo primero fue
+  `UnicodeDecodeError: 'charmap' codec can't decode byte 0x81` al leer
+  `stencil.wgsl`: `read_text()` sin `encoding` usa cp1252 en Windows (Python
+  3.14 aún no trae UTF-8 por defecto; llega en 3.15) y los shaders llevan
+  `──`. Arreglado con `encoding="utf-8"` en los nueve `read_text` y
+  `write_text` que no lo decían (`pipelines.py`, `compositor.py`,
+  `triangle.py`, `window.py`, `core/model.py`, `scene/scene.py`,
+  `text/tex.py`).
+- **§3 · DX12.** Hecho: `BACKEND = {"darwin": "Metal", "win32":
+  "DX12"}.get(sys.platform, "Vulkan")` en `context.py`, y las dos tablas de
+  `native.py` ganan `DX12` (`1 << 3`, `WGPUBackendType_D3D12`). Antes del
+  cambio, con Vulkan sobre el driver de AMD (26.10.1, LLPC), la primera
+  `create_render_pipeline` moría con un *access violation* dentro de
+  wgpu-native, sin nada en `JANIM_WGPU_LOG=info`: Vulkan en Windows no es una
+  opción con este driver. Con DX12,
+  `frame examples/tutorial/c1_01_basics/01_how_janim_works.py 20 f.png -qs`
+  sale en 1,2 s y se ve bien (texto en DejaVu, cuadrado, recta numérica).
+  **§3.3, confirmado:** `JANIM_HEADLESS=1` funciona: WARP sale como
+  «Microsoft Basic Render Driver», tipo `cpu`, el mismo frame tarda 1,2 s y
+  da otros bytes que la GPU. **§3.4, falso:** DX12 no da el nombre del
+  vendedor. wgpu-native pone en `vendor` la versión del driver
+  («32.0.32015.7029») y deja `description` vacía, así que el slug es
+  `320320157029` (WARP: `100261009711`, la build de Windows) y la versión
+  `unknown`. No rompe nada, pero el slug cambia con cada driver; si importa,
+  derivarlo de `vendor_id` (0x1002 AMD, 0x10DE NVIDIA, 0x8086 Intel, 0x1414
+  Microsoft). Alineaciones y `float32-filterable` no se han mirado.
+- **§4 · Vídeo.** Confirmado el fallo, sin tocar: `render … -qs` muere en
+  `video.py:290` con `OSError: [WinError 10038] Se intentó realizar una
+  operación en un elemento que no es un socket`.
+- **§5 · Fuentes.** Sin tocar: con `FREETYPE_ABSTRACTION_FONT_PATH` apuntando
+  a la carpeta del usuario, DejaVu se encuentra; sin la variable, no.
+- **§6, §7, §8.** Sin empezar.
+- **Lo que no cambió:** `video.py`, `glyphs.py`, `glfw.py`, `live.py`,
+  `cli.py`, `bootstrap.sh`, `bin/janim`.
+
 ## 0 · Reglas de trabajo
 
 - **El objetivo** es que en un Windows 11 funcionen el render a fichero, la
