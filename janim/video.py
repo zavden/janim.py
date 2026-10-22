@@ -13,6 +13,7 @@ from pathlib import Path
 import select
 import shutil
 import subprocess
+import sys
 import threading
 import time
 
@@ -287,12 +288,17 @@ is borrowed until write_frame returns; its owner must not mutate it meanwhile.
                 if status is not None:
                     raise self._encoder_error(status)
                 descriptor = self._process.stdin.fileno()
-                _, writable, _ = select.select([], [descriptor], [], 0.01)
-                if not writable:
-                    continue
+                if sys.platform != "win32":
+                    _, writable, _ = select.select([], [descriptor], [], 0.01)
+                    if not writable:
+                        continue
                 try:
                     count = os.write(descriptor, view[offset:])
                 except BlockingIOError:
+                    # On Windows select takes only sockets: a full pipe is found
+                    # by writing, so pause instead of spinning.
+                    if sys.platform == "win32":
+                        time.sleep(0.001)
                     continue
                 except BrokenPipeError as error:
                     status = self._process.poll()
