@@ -1,4 +1,4 @@
-"""GPU device ownership and routing: Vulkan on Linux, Metal on macOS.
+"""GPU device ownership and routing: Vulkan on Linux, Metal on macOS, DX12 on Windows.
 
 The native library is the one bundled with the `wgpu` package, unless the
 environment variable WGPU_LIB_PATH names another file.
@@ -14,8 +14,9 @@ import threading
 
 
 NATIVE_VERSION = (24, 0)
-# The one backend the instance opens: Metal on macOS, Vulkan elsewhere.
-BACKEND = "Metal" if sys.platform == "darwin" else "Vulkan"
+# The one backend the instance opens: Metal on macOS, DX12 on Windows, Vulkan
+# elsewhere. Janim.jl makes the same choice, so the two can be compared.
+BACKEND = {"darwin": "Metal", "win32": "DX12"}.get(sys.platform, "Vulkan")
 GPUInfo = namedtuple("GPUInfo", "renderer slug backend version kind")
 _LOCK = threading.RLock()
 _BINDING = None

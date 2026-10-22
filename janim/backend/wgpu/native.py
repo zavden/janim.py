@@ -18,10 +18,15 @@ from wgpu.backends.wgpu_native._ffi import ffi, lib
 
 
 _INSTANCE = None
-# wgpu.h: WGPUInstanceBackend_Vulkan = 1 << 0, _Metal = 1 << 2; cffi ABI mode
-# cannot expose this header's static const WGPUFlags as integer constants.
-_INSTANCE_BACKENDS = {"Vulkan": 1 << 0, "Metal": 1 << 2}
-_BACKEND_TYPES = {"Vulkan": lib.WGPUBackendType_Vulkan, "Metal": lib.WGPUBackendType_Metal}
+# wgpu.h: WGPUInstanceBackend_Vulkan = 1 << 0, _Metal = 1 << 2, _DX12 = 1 << 3;
+# cffi ABI mode cannot expose this header's static const WGPUFlags as integer
+# constants.
+_INSTANCE_BACKENDS = {"Vulkan": 1 << 0, "Metal": 1 << 2, "DX12": 1 << 3}
+_BACKEND_TYPES = {
+    "Vulkan": lib.WGPUBackendType_Vulkan,
+    "Metal": lib.WGPUBackendType_Metal,
+    "DX12": lib.WGPUBackendType_D3D12,
+}
 NATIVE_CALLS = (
     "wgpuCreateInstance",
     "wgpuAdapterRequestDevice",
