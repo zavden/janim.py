@@ -27,7 +27,7 @@ class FontNotFound(ValueError):
 
 @lru_cache(maxsize=1)
 def _font_catalog():
-    """Use BaseDirs' roots and FreeTypeAbstraction's order: breadth-first on Linux, the five flat folders on macOS."""
+    """Use BaseDirs' roots and FreeTypeAbstraction's order: breadth-first on Linux, the five flat folders on macOS, the two on Windows."""
     import freetype
 
     if sys.platform == "darwin":
@@ -37,6 +37,13 @@ def _font_catalog():
             Path("/System/Library/Fonts"),
             Path("/System/Library/Fonts/Supplemental"),
             Path("/Network/Library/Fonts"),
+        ]
+        folders = [path for path in roots if path.is_dir()]
+    elif sys.platform == "win32":
+        # the system's folder, then the per-user one that «Install» fills
+        roots = [
+            Path(os.environ.get("WINDIR") or "C:/Windows") / "Fonts",
+            Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "Microsoft/Windows/Fonts",
         ]
         folders = [path for path in roots if path.is_dir()]
     else:
