@@ -13,13 +13,17 @@ arithmetic does not depend on the system's libm.
 
 ## Requirements
 
-- **Linux** with a Vulkan driver (Mesa RADV, lavapipe or another), or **macOS
-  14 or later on Apple Silicon**, where Janim draws with Metal (tested on
-  macOS 26.6, Apple M1). Windows is not supported yet.
+- **Linux** with a Vulkan driver (Mesa RADV, lavapipe or another), **macOS 14
+  or later on Apple Silicon**, where Janim draws with Metal (tested on macOS
+  26.6, Apple M1), or **Windows 11**, where it draws with DX12 (tested on
+  Windows 11 25H2, AMD Radeon RX 9070 XT). On Windows the port is partial:
+  single frames render; video and the live window are still being written
+  (see [`WINDOWS.md`](WINDOWS.md)).
 - **Python 3.14.**
 - **`ffmpeg`** on the `PATH`, to write video.
 - **`latex` and `dvisvgm`** on the `PATH`, for `Tex` and `MathTex`.
-- The fonts your scenes ask for. The examples use DejaVu Sans.
+- The fonts your scenes ask for. The examples use DejaVu Sans; a few lessons
+  also ask for Liberation Serif and Liberation Mono.
 
 ## Install
 
@@ -30,8 +34,28 @@ scripts/bootstrap.sh        # creates .venv/ with numpy, wgpu, glfw and freetype
 ```
 
 `PYTHON=/path/to/python3.14 scripts/bootstrap.sh` picks another interpreter.
+Before that, each platform needs its own packages.
 
-On macOS, Homebrew provides everything but LaTeX:
+### Linux
+
+Python 3.14, Mesa's Vulkan drivers, ffmpeg, the DejaVu fonts and, for `Tex`,
+LaTeX with the `standalone` class and `dvisvgm`:
+
+```bash
+# Fedora 43 or later (ffmpeg from RPM Fusion)
+sudo dnf install python3 mesa-vulkan-drivers ffmpeg dejavu-sans-fonts \
+  texlive-latex texlive-standalone texlive-preview texlive-amsmath texlive-amsfonts texlive-xcolor texlive-dvisvgm
+# Debian, Ubuntu
+sudo apt install python3.14 mesa-vulkan-drivers ffmpeg fonts-dejavu texlive-latex-extra dvisvgm
+```
+
+Where the distribution has no Python 3.14, [uv](https://docs.astral.sh/uv/)
+provides one: `uv python install 3.14`, then
+`PYTHON="$(uv python find 3.14)" scripts/bootstrap.sh`.
+
+### macOS
+
+Homebrew provides everything but LaTeX:
 
 ```bash
 brew install python@3.14 ffmpeg
@@ -42,6 +66,53 @@ PYTHON=python3.14 scripts/bootstrap.sh   # also installs rubicon-objc, which wgp
 `Tex` needs MacTeX or BasicTeX plus `dvisvgm` (`sudo tlmgr install dvisvgm`
 if it is missing); both live in `/Library/TeX/texbin`, which must be on the
 `PATH`.
+
+### Windows
+
+In PowerShell. [uv](https://docs.astral.sh/uv/) fetches Python 3.14 and
+builds the environment (`scripts/bootstrap.sh` expects `.venv/bin/python`
+and does not run here yet); ffmpeg and MiKTeX, which brings `dvisvgm`, come
+from winget. Git for Windows is needed only to clone: do it with
+`git clone -c core.autocrlf=input …`, or the bash scripts come out with CRLF.
+
+```powershell
+winget install -e --id astral-sh.uv
+winget install -e --id Gyan.FFmpeg
+winget install -e --id MiKTeX.MiKTeX      # optional: Tex and MathTex
+```
+
+Open a new terminal so the `PATH` is fresh, then, in the checkout:
+
+```powershell
+uv venv --python 3.14 .venv
+uv pip install --python .venv\Scripts\python.exe --only-binary :all: --no-deps numpy==2.4.6 wgpu==0.21.0 glfw==2.10.2 freetype-py==2.5.1 cffi==2.1.1 pycparser==3.0 sniffio==1.3.1
+.venv\Scripts\python.exe -c "import pathlib, sysconfig; (pathlib.Path(sysconfig.get_path('purelib')) / 'janim.pth').write_text(str(pathlib.Path.cwd()) + '\n')"
+```
+
+Those are the versions `pyproject.toml` pins (`[project]` and
+`[tool.janim.bootstrap]`, minus `rubicon-objc`, which is macOS only), and the
+`.pth` makes the checkout importable, as the bootstrap does.
+
+Fonts: download [DejaVu](https://github.com/dejavu-fonts/dejavu-fonts/releases)
+(and [Liberation](https://github.com/liberationfonts/liberation-fonts/releases)),
+select the `.ttf` files, right-click, *Install*. They land in
+`%LOCALAPPDATA%\Microsoft\Windows\Fonts`, a folder Janim does not know yet,
+so name it in every session that renders text:
+
+```powershell
+$env:FREETYPE_ABSTRACTION_FONT_PATH = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
+```
+
+If you installed MiKTeX, open MiKTeX Console and set the on-the-fly package
+installation to *Always* (or run
+`initexmf --set-config-value=[MPM]AutoInstall=1`); otherwise the first `Tex`
+waits for a dialog nobody sees.
+
+`bin/janim` is bash; on Windows call the module instead:
+
+```powershell
+.venv\Scripts\python.exe -m janim.cli frame hello.py 20 f.png -ql
+```
 
 ## A minimal scene
 
@@ -80,7 +151,8 @@ The quality flag sets resolution and frame rate together:
 | `-qh` | 1920×1080 | 60 |
 
 Rendering runs on the GPU by default. Prefix a command with `JANIM_HEADLESS=1`
-to render on the CPU (lavapipe; Linux only, macOS has no CPU adapter).
+to render on the CPU (lavapipe on Linux, WARP on Windows; macOS has no CPU
+adapter).
 
 ## Examples
 
@@ -107,9 +179,10 @@ them, are written in Spanish.
 
 ## Known limitations
 
-- **Linux and macOS (Apple Silicon) only.** Windows is not supported. Frames
-  are reproducible within a route (RADV, lavapipe or Metal), and Metal can
-  differ from Linux by a pixel at some edges.
+- **Windows is a partial port.** Single frames render (DX12); video and the
+  live window do not yet. Frames are reproducible within a route (RADV,
+  lavapipe, Metal, DX12 or WARP), and routes can differ from each other by a
+  pixel at some edges.
 - **No motion blur in video.** `Scene` takes no `motion_blur` or `shutter`,
   and the CLI rejects `--motion-blur`. What exists is `render_frame_motion`,
   which averages several exposures into a single frame. The lessons in
