@@ -47,7 +47,7 @@ from pathlib import Path
 
 from janim import *
 from janim.backend.wgpu.uniforms import quad_params
-from janim.core._julia_math import sin
+from janim.math import sin
 
 # ── 1 · the struct ─────────────────────────────────────────────────────────
 

@@ -28,7 +28,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 2.0
 
@@ -36,7 +36,7 @@ PREVIEW_T = 2.0
 def sphere_of(r):
     """A uv sphere of radius `r`.
 
-    `cos`/`sin` come from janim.core._julia_math, so every vertex is the same on
+    `cos`/`sin` come from janim.math, so every vertex is the same on
     any machine."""
     return Surface(
         lambda u, v: (r * cos(u) * sin(v), r * sin(u) * sin(v), -r * cos(v)),

@@ -27,7 +27,7 @@ nombre la taparía.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import sin
+from janim.math import sin
 from janim.core.effects_types import _noise_hash
 
 

@@ -21,7 +21,7 @@ exactly; add a noise texture and you have a dissolve.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import sin
+from janim.math import sin
 
 PREVIEW_T = 2.4
 

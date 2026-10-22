@@ -9,12 +9,29 @@ CENTER = np.array((0, 0, 25), dtype=np.float32)
 SCALE = np.float32(0.125)
 
 
-def lorenz_step(raw, dt):
-    """One explicit Euler step of every particle, in Float32."""
-    x, y, z = raw[:, 0].copy(), raw[:, 1].copy(), raw[:, 2].copy()
-    raw[:, 0] = x + dt * SIGMA * (y - x)
-    raw[:, 1] = y + dt * (x * (RHO - z) - y)
-    raw[:, 2] = z + dt * (x * y - BETA * z)
+def lorenz_step(state, out, dt, t1, t2):
+    """One explicit Euler step of every particle, in Float32, from `state` into `out`.
+
+    Both are (3, N) arrays, one contiguous row per coordinate, and every
+    operation writes with `out=` into the two work rows `t1`, `t2` or into
+    `out`: the same arithmetic as `x + dt * SIGMA * (y - x)`, etc., in the
+    same order, without million-element temporaries.
+    """
+    x, y, z = state
+    nx, ny, nz = out
+    np.subtract(y, x, out=t1)
+    np.multiply(t1, dt * SIGMA, out=t1)
+    np.add(x, t1, out=nx)
+    np.subtract(RHO, z, out=t1)
+    np.multiply(x, t1, out=t1)
+    np.subtract(t1, y, out=t1)
+    np.multiply(dt, t1, out=t1)
+    np.add(y, t1, out=ny)
+    np.multiply(x, y, out=t1)
+    np.multiply(BETA, z, out=t2)
+    np.subtract(t1, t2, out=t1)
+    np.multiply(dt, t1, out=t1)
+    np.add(z, t1, out=nz)
 
 
 class LorenzScene(Scene):
@@ -34,8 +51,17 @@ class LorenzScene(Scene):
         index = np.rint(np.float32(255) * (zs - zlo) / (zhi - zlo)).astype(np.int64)
         dc.set_colors(band[index], opacity=0.13)
 
+        # the state lives by rows (3, N); two buffers alternate on every substep
+        state = [np.ascontiguousarray(raw.T), np.empty((3, len(raw)), dtype=np.float32)]
+        t1 = np.empty(len(raw), dtype=np.float32)
+        t2 = np.empty(len(raw), dtype=np.float32)
+        projected = np.empty((3, len(raw)), dtype=np.float32)
+        center = CENTER.reshape(3, 1)
+
         def project(points):
-            points[:] = SCALE * (raw - CENTER)
+            np.subtract(state[0], center, out=projected)
+            np.multiply(SCALE, projected, out=projected)
+            points[:] = projected.T                 # SCALE * (raw - CENTER), by rows
 
         project(dc.get_points())
 
@@ -44,7 +70,8 @@ class LorenzScene(Scene):
                 return
             h = np.float32(dt) / np.float32(4)
             for _ in range(4):                      # four substeps: Lorenz wants a short dt
-                lorenz_step(raw, h)
+                lorenz_step(state[0], state[1], h, t1, t2)
+                state[0], state[1] = state[1], state[0]
             project(m.get_points())
 
         dc.add_updater(flow)

@@ -12,20 +12,22 @@ que ese vuelo es un `animate` cualquiera con un `about_point`.
 
 Manim no tiene máscaras: un `Text` solo se puede dibujar, no recortar.
 
-Las muestras de la malla salen de `linear_range`; las olas se escriben en
-los arrays vivos `points`/`d_normal_points` de la superficie y se avisa con
-`note_changed_data()`; y un `animate` con dos operaciones es una cadena del
-constructor `.animate`.
+Las muestras de la malla salen de `linear_range`; las olas se calculan para
+todos los vértices a la vez con el `sin` y el `cos` de `janim.math` sobre
+arrays (los mismos bits que llamándolos uno a uno, y los mismos que Janim.jl),
+se escriben en los arrays vivos `points`/`d_normal_points` de la superficie y
+se avisa con `note_changed_data()`; y un `animate` con dos operaciones es una
+cadena del constructor `.animate`.
 
     bin/janim render examples/demo/07_text_mask.py -ql
 """
 
-import math
 from pathlib import Path
 
+import numpy as np
+
 from janim import *
-from janim.core._julia_math import cos, sin
-from janim.core._ranges import linear_range
+from janim.math import cos, linear_range, sin
 
 
 class TextMask(Scene):
@@ -40,23 +42,24 @@ class TextMask(Scene):
             opacity=1.0,
             shading=(0.25, 0.35, 0.5),
         )
-        us = linear_range(-X, X, NU)
-        vs = linear_range(-Y, Y, NV)
+        # las muestras u, v de cada vértice, en el orden de la malla (u fuera, v dentro)
+        us = np.asarray(linear_range(-X, X, NU))
+        vs = np.asarray(linear_range(-Y, Y, NV))
+        U, V = (grid.ravel() for grid in np.meshgrid(us, vs, indexing="ij"))
 
         def waves(m, dt):
+            # las olas de TODOS los vértices a la vez: `sin` y `cos` de janim.math
+            # aceptan arrays y dan los mismos bits que en un bucle, 5× más rápido
             t = self.t
-            points = m.points
-            nudged = m.d_normal_points
-            k = 0
-            for u in us:
-                for v in vs:
-                    z = 0.34 * sin(1.7 * u + 1.8 * t) * cos(1.4 * v + 1.3 * t) + 0.12 * sin(2.6 * u - 1.1 * t)
-                    dzx = 0.578 * cos(1.7 * u + 1.8 * t) * cos(1.4 * v + 1.3 * t) + 0.312 * cos(2.6 * u - 1.1 * t)
-                    dzy = -0.476 * sin(1.7 * u + 1.8 * t) * sin(1.4 * v + 1.3 * t)
-                    inv = 1e-3 / math.sqrt(dzx * dzx + dzy * dzy + 1)
-                    points[k] = (u, v, z)
-                    nudged[k] = (u - dzx * inv, v - dzy * inv, z + inv)
-                    k += 1
+            a, b, c = 1.7 * U + 1.8 * t, 1.4 * V + 1.3 * t, 2.6 * U - 1.1 * t
+            sa, ca, sb, cb, sc, cc = sin(a), cos(a), sin(b), cos(b), sin(c), cos(c)
+            z = 0.34 * sa * cb + 0.12 * sc
+            dzx = 0.578 * ca * cb + 0.312 * cc
+            dzy = -0.476 * sa * sb
+            inv = 1e-3 / np.sqrt(dzx * dzx + dzy * dzy + 1)
+            points, nudged = m.points, m.d_normal_points
+            points[:, 0], points[:, 1], points[:, 2] = U, V, z
+            nudged[:, 0], nudged[:, 1], nudged[:, 2] = U - dzx * inv, V - dzy * inv, z + inv
             m.note_changed_data()
 
         sea.add_updater(waves)

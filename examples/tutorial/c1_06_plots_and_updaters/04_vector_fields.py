@@ -28,7 +28,7 @@ Two things ManimGL cannot promise here, and this engine does:
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos
+from janim.math import cos
 
 PREVIEW_T = 5.8
 
@@ -46,7 +46,7 @@ class VectorFields(Scene):
 
         # A time-varying field: the classic rotation, breathing with cos(t/2).
         # The updater it installs advances `vf.time` and re-lays every arrow.
-        # `cos` comes from janim.core._julia_math (Julia Base's math functions).
+        # `cos` comes from janim.math (Julia Base's math functions).
         vf = TimeVaryingVectorField(
             lambda c, t: (cos(0.5 * t) * -c[1], cos(0.5 * t) * c[0]),
             axes,

@@ -20,7 +20,8 @@ veteado.
 La misma escena, con otro vuelo de cámara, está en
 `examples/scenes/lorenz_scene.py`.
 
-El bucle por partícula es una operación de numpy sobre columnas float32.
+El bucle por partícula son operaciones de numpy sobre filas float32 contiguas,
+escritas en sitio con `out=`: sin temporales de un millón de elementos.
 
     bin/janim render examples/demo/04_lorenz_glow.py -ql
 """
@@ -36,12 +37,30 @@ CENTER04 = np.array((0, 0, 25), dtype=np.float32)
 SCALE04 = np.float32(0.125)
 
 
-def lorenz_step(raw, dt):
-    """Un paso de Euler explícito de cada partícula, en Float32."""
-    x, y, z = raw[:, 0].copy(), raw[:, 1].copy(), raw[:, 2].copy()
-    raw[:, 0] = x + dt * SIGMA04 * (y - x)
-    raw[:, 1] = y + dt * (x * (RHO04 - z) - y)
-    raw[:, 2] = z + dt * (x * y - BETA04 * z)
+def lorenz_step(state, out, dt, t1, t2):
+    """Un paso de Euler explícito de cada partícula, en Float32, de `state` a `out`.
+
+    `state` y `out` son arrays (3, N): una fila contigua por coordenada, así
+    que cada operación recorre 4 MB seguidos en vez de saltar de columna en
+    columna; `t1` y `t2` son dos filas de trabajo que se reutilizan, y todas
+    las operaciones escriben con `out=`. Es la misma aritmética, en el mismo
+    orden, que `x + dt * SIGMA * (y - x)`, etc.: los frames no cambian.
+    """
+    x, y, z = state
+    nx, ny, nz = out
+    np.subtract(y, x, out=t1)
+    np.multiply(t1, dt * SIGMA04, out=t1)
+    np.add(x, t1, out=nx)                      # x + dt * σ * (y - x)
+    np.subtract(RHO04, z, out=t1)
+    np.multiply(x, t1, out=t1)
+    np.subtract(t1, y, out=t1)
+    np.multiply(dt, t1, out=t1)
+    np.add(y, t1, out=ny)                      # y + dt * (x * (ρ - z) - y)
+    np.multiply(x, y, out=t1)
+    np.multiply(BETA04, z, out=t2)
+    np.subtract(t1, t2, out=t1)
+    np.multiply(dt, t1, out=t1)
+    np.add(z, t1, out=nz)                      # z + dt * (x * y - β * z)
 
 
 class LorenzGlow(Scene):
@@ -75,8 +94,18 @@ class LorenzGlow(Scene):
         index = np.rint(np.float32(255) * (zs - zlo) / (zhi - zlo)).astype(np.int64)
         dc.set_colors(band[index], opacity=0.13)
 
+        # el estado vive por filas (3, N): x, y, z contiguas; dos buffers que se
+        # alternan en cada subpaso, dos filas de trabajo y una (3, N) para proyectar
+        state = [np.ascontiguousarray(raw.T), np.empty((3, len(raw)), dtype=np.float32)]
+        t1 = np.empty(len(raw), dtype=np.float32)
+        t2 = np.empty(len(raw), dtype=np.float32)
+        projected = np.empty((3, len(raw)), dtype=np.float32)
+        center = CENTER04.reshape(3, 1)
+
         def project(points):
-            points[:] = SCALE04 * (raw - CENTER04)
+            np.subtract(state[0], center, out=projected)
+            np.multiply(SCALE04, projected, out=projected)
+            points[:] = projected.T                 # SCALE * (raw - CENTER), por filas
 
         project(dc.get_points())
 
@@ -85,7 +114,8 @@ class LorenzGlow(Scene):
                 return
             h = np.float32(dt) / np.float32(4)
             for _ in range(4):                      # 4 subpasos: Lorenz pide dt corto
-                lorenz_step(raw, h)
+                lorenz_step(state[0], state[1], h, t1, t2)
+                state[0], state[1] = state[1], state[0]
             project(m.get_points())
 
         dc.add_updater(flow)

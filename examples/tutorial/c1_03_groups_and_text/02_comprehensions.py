@@ -23,7 +23,7 @@ import math
 from pathlib import Path
 
 from janim import *
-from janim.core._ranges import step_range
+from janim.math import step_range
 
 PREVIEW_T = 2.4
 

@@ -3,7 +3,7 @@
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 from janim.ode import ODEProblem, Tsit5, init, step
 
 G = 9.8

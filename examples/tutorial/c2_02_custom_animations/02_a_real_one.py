@@ -18,8 +18,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import exp, sin
-from janim.core._ranges import linear_range
+from janim.math import exp, linear_range, sin
 
 
 class TraceGraph(Animation):
@@ -100,7 +99,7 @@ class ARealOne(Scene):
         ax.move_to(0.4 * DOWN)
         self.add(ax)
 
-        # `sin` and `exp` come from janim.core._julia_math (Julia Base's math
+        # `sin` and `exp` come from janim.math (Julia Base's math
         # functions); `x^2` is `x * x`.
         def f(x):
             return 1.5 * sin(1.6 * x) * exp(-0.12 * (x * x))

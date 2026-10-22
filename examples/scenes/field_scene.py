@@ -9,8 +9,7 @@ by gradient (forward-mode duals) onto a star.
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, hypot, sin
-from janim.core._ranges import linear_range, step_range
+from janim.math import cos, hypot, linear_range, sin, step_range
 from janim.ode import ODEProblem, Tsit5, init, solve, step
 from janim.ode.dual import abs2, dual_sum, gradient
 

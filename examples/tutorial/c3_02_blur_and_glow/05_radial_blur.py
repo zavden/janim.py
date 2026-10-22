@@ -20,7 +20,7 @@ updater on it and the zoom blur tracks whatever you are pointing at.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 2.2
 

@@ -23,8 +23,8 @@ Es el acto 2 de `examples/scenes/field_scene.py:FieldAndChaos`, sin las
 líneas de campo de fondo y con la rejilla completa.
 
 El estado mutable de los updaters son listas de un elemento; el seno y el
-coseno vienen de `janim.core._julia_math` y el rango de la rejilla
-(`-7.2` a `7.2` de `0.8` en `0.8`) de `janim.core._ranges.step_range`, para
+coseno vienen de `janim.math` y el rango de la rejilla
+(`-7.2` a `7.2` de `0.8` en `0.8`) de `janim.math.step_range`, para
 que las muestras sean siempre las mismas.
 
     bin/janim render examples/demo/02_pendulum_glow.py -ql
@@ -35,8 +35,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
-from janim.core._ranges import step_range
+from janim.math import cos, sin, step_range
 from janim.ode import ODEProblem, Tsit5, init, step
 
 G02 = 9.8

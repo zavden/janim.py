@@ -24,7 +24,7 @@ subtitle card).
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import sin
+from janim.math import sin
 
 PREVIEW_T = 2.4
 

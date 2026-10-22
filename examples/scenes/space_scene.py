@@ -3,8 +3,7 @@
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
-from janim.core._ranges import linear_range
+from janim.math import cos, linear_range, sin
 
 X, Y, NU, NV = 6.5, 4.6, 61, 41
 
@@ -20,25 +19,24 @@ class SpaceScene(Scene):
             opacity=1.0,
             shading=(0.45, 0.55, 0.35),
         )
-        us = linear_range(-X, X, NU)
-        vs = linear_range(-Y, Y, NV)
+        us = np.asarray(linear_range(-X, X, NU))
+        vs = np.asarray(linear_range(-Y, Y, NV))
+        U, V = (grid.ravel() for grid in np.meshgrid(us, vs, indexing="ij"))
         clock = [0.0]
 
         def wave(m, dt):
             clock[0] += dt
             t = clock[0]
-            points = m.points
-            nudged = m.d_normal_points
-            k = 0
-            for u in us:
-                for v in vs:
-                    z = -1.35 + 0.22 * sin(1.3 * u + 1.8 * t) * cos(1.1 * v + 1.3 * t) + 0.10 * sin(2.1 * u - 1.1 * t)
-                    dzx = 0.286 * cos(1.3 * u + 1.8 * t) * cos(1.1 * v + 1.3 * t) + 0.21 * cos(2.1 * u - 1.1 * t)
-                    dzy = -0.242 * sin(1.3 * u + 1.8 * t) * sin(1.1 * v + 1.3 * t)
-                    inv = 1e-3 / np.sqrt(dzx * dzx + dzy * dzy + 1)
-                    points[k] = (u, v, z)
-                    nudged[k] = (u - dzx * inv, v - dzy * inv, z + inv)
-                    k += 1
+            # every vertex at once: janim.math's sin and cos take arrays
+            a, b, c = 1.3 * U + 1.8 * t, 1.1 * V + 1.3 * t, 2.1 * U - 1.1 * t
+            sa, ca, sb, cb, sc, cc = sin(a), cos(a), sin(b), cos(b), sin(c), cos(c)
+            z = -1.35 + 0.22 * sa * cb + 0.10 * sc
+            dzx = 0.286 * ca * cb + 0.21 * cc
+            dzy = -0.242 * sa * sb
+            inv = 1e-3 / np.sqrt(dzx * dzx + dzy * dzy + 1)
+            points, nudged = m.points, m.d_normal_points
+            points[:, 0], points[:, 1], points[:, 2] = U, V, z
+            nudged[:, 0], nudged[:, 1], nudged[:, 2] = U - dzx * inv, V - dzy * inv, z + inv
             m.note_changed_data()
 
         olas.add_updater(wave)

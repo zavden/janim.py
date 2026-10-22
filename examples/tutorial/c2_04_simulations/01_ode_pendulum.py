@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 from janim.ode import ODEProblem, Tsit5, init, step
 
 G = 9.8
@@ -42,7 +42,7 @@ L = 1.15
 def pendulum(du, u, p, t):
     """The double pendulum, equal masses and equal lengths (in units where L = 1).
 
-    Uses `janim.core._julia_math` and a fixed operation order: a chaotic
+    Uses `janim.math` and a fixed operation order: a chaotic
     system shows a one-ulp difference within seconds."""
     theta1, theta2, omega1, omega2 = u
     delta = theta1 - theta2

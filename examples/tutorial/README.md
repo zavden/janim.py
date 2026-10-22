@@ -257,9 +257,9 @@ the shape zoo.
 - **Sizes are in scene units**: the nominal frame is 8 units tall and 8·16/9 ≈
   14.22 wide, whatever the pixel resolution.
 - **Reproducible arithmetic where it matters**: a lesson that evaluates `sin`,
-  `cos`, `hypot`… in its own code takes them from `janim.core._julia_math`,
-  and float ranges from `janim.core._ranges`, so its samples are the same on
-  every run and every machine.
+  `cos`, `hypot`… in its own code takes them from `janim.math` (Julia's libm,
+  bit for bit, for floats and for whole arrays), and float ranges from the
+  same module, so its samples are the same on every run and every machine.
 - **Numbers in the docstrings were measured**, not remembered; where a lesson
   claims a figure it usually prints it too.
 

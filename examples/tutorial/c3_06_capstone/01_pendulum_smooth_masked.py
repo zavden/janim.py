@@ -38,8 +38,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
-from janim.core._ranges import step_range
+from janim.math import cos, sin, step_range
 from janim.ode import ODEProblem, Tsit5, init, solve, step
 
 G = 9.8

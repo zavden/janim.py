@@ -24,8 +24,7 @@ The three 3D switches:
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, hypot, sin
-from janim.core._ranges import step_range
+from janim.math import cos, hypot, sin, step_range
 
 PREVIEW_T = 2.4
 
@@ -54,7 +53,7 @@ class Plots3D(Scene):
         axes.apply_depth_test()
 
         # z = sin(r)/r — the classic ripple, sampled as a uv patch. `hypot` and
-        # `sin` come from janim.core._julia_math (Julia Base's math functions),
+        # `sin` come from janim.math (Julia Base's math functions),
         # so every vertex is the same on any machine.
         ripple = Surface(
             ripple_point,

@@ -29,22 +29,22 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._atan import atan2
-from janim.core._julia_math import cos, hypot, sin
+from janim.math import atan2, cos, hypot, sin
 
 PREVIEW_T = 2.5
 
 
 def orbit(m, dt):
     """Move every particle along its ellipse, in place, with Julia Base's math
-    (janim.core._julia_math)."""
+    (janim.math): every call takes the whole array, one call per frame."""
     pts = m.get_points()                       # the live array
     xs = pts[:, 0].astype(np.float64) + 3.2    # back to circle coords
     ys = pts[:, 1].astype(np.float64) / 0.8
-    thetas = atan2(ys, xs) + 0.6 * dt          # orbit (atan2, one call per frame)
-    for i, (x, y, theta) in enumerate(zip(xs.tolist(), ys.tolist(), thetas.tolist())):
-        r = hypot(x, y)
-        pts[i] = (r * cos(theta) - 3.2, 0.8 * r * sin(theta), 0)
+    thetas = atan2(ys, xs) + 0.6 * dt          # orbit
+    r = hypot(xs, ys)
+    pts[:, 0] = r * cos(thetas) - 3.2
+    pts[:, 1] = 0.8 * r * sin(thetas)
+    pts[:, 2] = 0
 
 
 class Particles(Scene):

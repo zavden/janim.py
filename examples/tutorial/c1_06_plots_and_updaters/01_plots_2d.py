@@ -27,8 +27,7 @@ filled by real winding, so the exact polygon just works.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import sin
-from janim.core._ranges import step_range
+from janim.math import sin, step_range
 
 PREVIEW_T = 5.0
 
@@ -63,7 +62,7 @@ class Plots2D(Scene):
         )
         ax.move_to(2.6 * LEFT + 0.4 * DOWN)
 
-        # `sin` comes from janim.core._julia_math (Julia Base's math
+        # `sin` comes from janim.math (Julia Base's math
         # functions), so the samples are the same on any machine.
         sine = ax.plot(sin, color="#58C4DD", stroke_width=4.0)
         area = ax.get_area(

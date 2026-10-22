@@ -111,8 +111,8 @@ su Bloom y el `feather = 0.7` de la máscara del reflejo (63 px de σ).
   integrador que avanza con `dt` (02, 04) simula OTRA cosa a otros fps.
 - **Detalles numéricos de Python** que las escenas cuidan para que los
   fotogramas salgan siempre iguales: `sin`/`cos` de
-  `janim.core._julia_math` (no los de `math`, que difieren en el último bit
-  en ~3 % de las entradas); los rangos con `janim.core._ranges`
+  `janim.math` (no los de `math`, que difieren en el último bit
+  en ~3 % de las entradas); los rangos con `janim.math`
   (`step_range`, `linear_range`); en numpy 2 `0.22 * array_float32` se queda
   en float32, así que donde hace falta Float64 se sube a mano (03, 09: en la
   03 no llega a mover un píxel a 360p, pero es la cuenta exacta); `x ** 2`

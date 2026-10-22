@@ -3,8 +3,7 @@
 import numpy as np
 
 from janim import *
-from janim.core._atan import scalar_atan2
-from janim.core._julia_math import cos, sin
+from janim.math import atan2, cos, sin
 from janim.core.surface import _cross
 
 
@@ -116,7 +115,7 @@ class ChaseScene(Scene):
             axis = _cross(np.array((0.0, 0.0, 1.0)), v.astype(np.float64))
             s = float(np.sqrt((axis[0] * axis[0] + axis[1] * axis[1]) + axis[2] * axis[2]))
             if s > 1e-6:
-                g.rotate(scalar_atan2(s, float(v[2])), axis=axis)
+                g.rotate(atan2(s, float(v[2])), axis=axis)
             g.move_to(p)
             return g
 

@@ -26,8 +26,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, hypot, sin
-from janim.core._ranges import linear_range
+from janim.math import cos, hypot, linear_range, sin
 from janim.ode.dual import abs2, dual_sum, gradient
 
 K = 10          # harmonics kept, each way
@@ -67,7 +66,7 @@ def star_target():
 _SAMPLES = np.array(linear_range(0, 1, S + 1)[:S])
 _HARMONICS = list(range(-K, K + 1))
 # cos(2πks) and sin(2πks) per harmonic, evaluated one s at a time with the
-# functions of janim.core._julia_math
+# functions of janim.math
 _COS = [np.array([cos(2 * PI * k * s) for s in _SAMPLES]) for k in _HARMONICS]
 _SIN = [np.array([sin(2 * PI * k * s) for s in _SAMPLES]) for k in _HARMONICS]
 

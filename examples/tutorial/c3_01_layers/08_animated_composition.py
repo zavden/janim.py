@@ -25,7 +25,7 @@ exactly 1/fps per frame and never reads a wall clock.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 3.2
 

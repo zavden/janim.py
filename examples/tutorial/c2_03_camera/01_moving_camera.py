@@ -27,7 +27,7 @@ you want it pinned to the screen, that is `fix_in_frame`.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 3.0
 

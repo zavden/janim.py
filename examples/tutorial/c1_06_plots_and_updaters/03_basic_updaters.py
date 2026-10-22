@@ -30,7 +30,7 @@ the next frame. `always_redraw` and `TracedPath` handle it for you.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 2.4
 
@@ -60,7 +60,7 @@ class BasicUpdaters(Scene):
         t = ValueTracker(0.3)
         self.add(t)
 
-        # `sin` and `cos` come from janim.core._julia_math (Julia Base's math
+        # `sin` and `cos` come from janim.math (Julia Base's math
         # functions).
         curve = ax.plot(sin, color="#37506B", stroke_width=2.5)
         self.add(curve)

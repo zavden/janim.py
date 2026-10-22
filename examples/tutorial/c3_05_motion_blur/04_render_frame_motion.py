@@ -24,7 +24,7 @@ still and is exactly why you check a still first.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 PREVIEW_T = 1.0
 PREVIEW_MOTION = 16

@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import sin
+from janim.math import sin
 
 
 def card(formula, color, pos):

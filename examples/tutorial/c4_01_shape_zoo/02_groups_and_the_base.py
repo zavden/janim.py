@@ -23,8 +23,7 @@ below is a plain `VMobject` built by hand.
 from pathlib import Path
 
 from janim import *
-from janim.core._julia_math import cos, sin
-from janim.core._ranges import linear_range
+from janim.math import cos, linear_range, sin
 
 PREVIEW_T = 1.2
 
