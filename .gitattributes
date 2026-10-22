@@ -1,0 +1,5 @@
+# The bash scripts must stay LF even when Git converts line endings (the
+# default of Git for Windows); cmd.exe wants its scripts CRLF.
+bin/janim text eol=lf
+*.sh text eol=lf
+*.cmd text eol=crlf
