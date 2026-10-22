@@ -46,7 +46,7 @@ def effect_shader(entry, fragment):
     directory = Path(__file__).with_name("shaders") / "inserts"
     source = "".join(
         (
-        f"// ── {name} ──\n" + (directory / name).read_text() + "\n"
+        f"// ── {name} ──\n" + (directory / name).read_text(encoding="utf-8") + "\n"
         for name in ("quad_common.wgsl", "noise.wgsl", "straight.wgsl")
         ),
     ) + fragment

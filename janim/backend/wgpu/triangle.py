@@ -9,7 +9,7 @@ from .context import _binding
 from .targets import render_pass
 
 
-TRIANGLE_WGSL = (Path(__file__).with_name("shaders") / "triangle.wgsl").read_text()
+TRIANGLE_WGSL = (Path(__file__).with_name("shaders") / "triangle.wgsl").read_text(encoding="utf-8")
 TRIANGLE_F0 = np.array(
     [(-0.6, -0.5, 1.0, 0.0, 0.0), (0.6, -0.5, 0.0, 1.0, 0.0), (0.0, 0.6, 0.0, 0.0, 1.0)],
     dtype=np.float32,

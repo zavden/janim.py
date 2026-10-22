@@ -804,7 +804,7 @@ def render_parallel(
             segment.unlink(missing_ok=True)
         raise RuntimeError(f"a render_parallel process failed (pids {failed})")
     listing = output.with_name(output.name + ".list.txt")
-    listing.write_text(concat_listing(segments))
+    listing.write_text(concat_listing(segments), encoding="utf-8")
     try:
         subprocess.run(
             [str(ffmpeg), "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(output)],

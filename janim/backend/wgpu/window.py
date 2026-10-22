@@ -19,7 +19,7 @@ from .targets import padded_bytes_per_row, read_rgb_topdown
 from .triangle import compile_wgsl
 from .uniforms import RenderStats, texture_layout
 
-PRESENT_WGSL = (Path(__file__).with_name("shaders") / "present.wgsl").read_text()
+PRESENT_WGSL = (Path(__file__).with_name("shaders") / "present.wgsl").read_text(encoding="utf-8")
 PRESENTS = 0
 SURFACE_RECONFIGS = 0
 _PLAIN = {"bgra8unorm-srgb": "bgra8unorm", "rgba8unorm-srgb": "rgba8unorm"}

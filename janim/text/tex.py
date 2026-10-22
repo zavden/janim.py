@@ -108,7 +108,7 @@ def _run_compiler(command, **kwargs):
 
 
 def _latex_error(path):
-    lines = path.read_text(errors="replace").splitlines() if path.is_file() else []
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines() if path.is_file() else []
     first = next((index for index, line in enumerate(lines) if line.startswith("!")), None)
     if first is None:
         return "  (no '!' line in the LaTeX log)"

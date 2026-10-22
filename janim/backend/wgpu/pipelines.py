@@ -26,13 +26,13 @@ _COVER_DEPTH_BIAS = 0
 
 def assemble(name):
     lines = []
-    for line in (SHADERS / name).read_text().splitlines():
+    for line in (SHADERS / name).read_text(encoding="utf-8").splitlines():
         match = re.fullmatch(r"// #INSERT (\S+)\s*", line)
         if match:
             insert = match[1]
             if Path(insert).name != insert:
                 raise ValueError("shader inserts must name a local source")
-            lines.append(f"// ── {insert} ──\n" + (SHADERS / "inserts" / insert).read_text())
+            lines.append(f"// ── {insert} ──\n" + (SHADERS / "inserts" / insert).read_text(encoding="utf-8"))
         else:
             lines.append(line)
     return "\n".join(lines) + "\n"

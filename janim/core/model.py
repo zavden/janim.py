@@ -38,7 +38,7 @@ def _read_mtl(path):
     name = ""
     kd = None
     map_kd = None
-    for raw in path.read_text().splitlines():
+    for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
@@ -80,7 +80,7 @@ def _read_obj(path):
     materials = {}
     current = ""
     path = Path(path)
-    for raw in path.read_text().splitlines():
+    for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
