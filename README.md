@@ -17,7 +17,7 @@ arithmetic does not depend on the system's libm.
   or later on Apple Silicon**, where Janim draws with Metal (tested on macOS
   26.6, Apple M1), or **Windows 11**, where it draws with DX12 (tested on
   Windows 11 25H2, AMD Radeon RX 9070 XT; the port is new, see
-  [`WINDOWS.md`](WINDOWS.md)).
+  [`history/2026-10/WINDOWS.md`](history/2026-10/WINDOWS.md)).
 - **Python 3.14.**
 - **`ffmpeg`** on the `PATH`, to write video.
 - **`latex` and `dvisvgm`** on the `PATH`, for `Tex` and `MathTex`.
