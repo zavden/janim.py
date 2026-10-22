@@ -324,17 +324,19 @@ move = t.animate(rate_func=smooth).set_value(2.0)
 - Curves: `ParametricCurve(t_func, t_range=(t0, t1, dt), discontinuities=…)`,
   `FunctionGraph(f, x_range=(-8, 8, 0.25))`, `ImplicitFunction(f,
   x_range=…, y_range=…)` for f(x, y) = 0.
-- Your function's bits: `math.sin` depends on the system's libm and differs
-  in the last bit on ~3 % of inputs. For frames that are identical on every
-  machine, take `sin`, `cos`, `exp`, `hypot`… from `janim.core._julia_math`
-  (a deterministic libm) and float ranges from `janim.core._ranges`
+- Your function's bits: `math.sin` depends on the system's libm and `np.sin`
+  on the CPU's SIMD path; both differ in the last bit on ~3 % of inputs. For
+  frames that are identical on every machine (and to Janim.jl), take `sin`,
+  `cos`, `exp`, `hypot`… from `janim.math` (Julia's libm, bit for bit; every
+  function takes a float or a whole array, and the array path is ~5× faster
+  per element than a Python loop) and the float ranges from the same module
   (`step_range(a, b, h)` = `a:h:b`, `linear_range(a, b, n)`), write
   `x * x * x` for `x^3`, and note that numpy 2 keeps `float * float32_array`
   in float32 (cast to float64 first when you need double precision).
 
 ```python
 from janim import *
-from janim.core._julia_math import sin
+from janim.math import sin
 
 ax = Axes((-4.0, 4.0, 1.0), (-1.0, 1.0, 0.5), width=7.4, height=3.4, include_numbers=True, color="#37506B", label_size=0.3, num_decimal_places=1, numbers_to_exclude=[0.0])
 sine = ax.plot(sin, color=BLUE, stroke_width=4.0)
@@ -409,7 +411,7 @@ both = Group(badge, photo)
 
 ```python
 from janim import *
-from janim.core._julia_math import hypot, sin
+from janim.math import hypot, sin
 
 
 def ripple(u, v):
@@ -522,7 +524,7 @@ ForwardDiff (`from janim import *` brings `ODEProblem`, `Tsit5`, `init`,
 import numpy as np
 
 from janim import *
-from janim.core._julia_math import cos, sin
+from janim.math import cos, sin
 
 
 def pendulum(du, u, p, t):

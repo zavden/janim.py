@@ -109,6 +109,13 @@ salida en `it's here/` conserva su vídeo). `1 ≤ N ≤ os.cpu_count()`: cada
 proceso tiene su propio dispositivo gráfico y su propia simulación completa de
 la escena, de modo que el beneficio crece con la duración del vídeo.
 
+Lo que la granja NO acelera es la simulación: cada proceso simula la escena
+desde t = 0 hasta el final de su segmento (los updaters corren en todos los
+frames y solo se dibujan los del segmento), así que el último proceso la
+simula entera y entre todos la repiten (N + 1)/2 veces. Una escena cuyo coste
+está en sus updaters tarda con `-j 4` lo mismo o más que en un proceso; la
+granja reparte el dibujo y la codificación.
+
 ## La ventana viva
 
 `janim escena.py` (o `preview`) abre una ventana GLFW **sin API gráfica**

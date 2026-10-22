@@ -9,7 +9,8 @@ with FreeType. On top of that it adds what Manim lacks: layers, masks,
 compositor effects and a camera per layer.
 
 The same code gives the same frames on every run: the clock is fixed and the
-arithmetic does not depend on the system's libm.
+arithmetic does not depend on the system's libm; `janim.math` gives your own
+updaters that same deterministic libm, for floats and for whole arrays.
 
 ## Requirements
 

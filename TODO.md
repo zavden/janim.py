@@ -42,11 +42,14 @@ An item leaves this file when it is settled.
 
 ## Behaviour and performance
 
-- **Two demos are CPU-bound.** At 1080p60, `04_lorenz_glow` and
-  `07_text_mask` take 25 s and 44 s on Linux (Ryzen 7 9700X) against 11 s
-  and 10 s in Janim.jl, 61 s and 51 s on Windows, and on the M1 `07` takes
-  78 s against Julia's 38 s. The time is numpy work per frame, not the GPU.
-  Profile the two and move the hot loops.
+- **The farm does not speed up simulation-bound scenes.** `-j N` renders
+  segment k in its own process, but every process simulates the scene from
+  t = 0 to the end of its segment (the updaters run for every frame; only the
+  segment's frames are drawn), so the last process simulates everything and
+  the N together repeat the simulation (N + 1)/2 times. `07_text_mask` at
+  1080p60 took 85 s with `-j 4` against 44 s in one process, before its
+  updater moved to arrays. Snapshots of the simulation state at the segment
+  boundaries (the checkpoint mechanism behind `render_from`) would fix it.
 - **A per-backend switch in the renderer.**
   `_MERGE_MESH_DRAWS = BACKEND != "Metal"` (`janim/backend/wgpu/render.py`):
   on Metal, merging the meshes into one `draw_indexed` moved the last bit of

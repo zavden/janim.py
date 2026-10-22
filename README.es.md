@@ -9,7 +9,8 @@ texto con FreeType. Añade lo que Manim no tiene: capas, máscaras, efectos de
 compositor y una cámara por capa.
 
 El mismo código da los mismos frames en cada ejecución: el reloj es fijo y la
-aritmética no depende de la libm del sistema.
+aritmética no depende de la libm del sistema; `janim.math` da a tus propios
+updaters esa misma libm determinista, para floats y para arrays enteros.
 
 ## Requisitos
 
