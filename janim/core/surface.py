@@ -55,9 +55,18 @@ def _cross(a, b):
     )
 
 
-def sample_surface(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge):
-    """Vertices and nudged vertices of a parametric patch, u-outer / v-inner."""
+def sample_surface(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge, *, vectorized=False):
+    """Vertices and nudged vertices of a parametric patch, u-outer / v-inner.
+
+    With `vectorized=True`, `uv_func` is called once with the u and v arrays of
+    every vertex (then once more for each nudge) instead of once per vertex;
+    the function has to accept arrays and work element by element, which the
+    functions of `janim.math` and numpy's arithmetic do. The two paths give
+    the same bits: the same operations, in the same order, on every vertex.
+    """
     epsilon, normal_nudge = float(epsilon), float(normal_nudge)
+    if vectorized:
+        return _sample_surface_arrays(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge)
     points = np.empty((nu * nv, 3), dtype=np.float32)
     nudged = np.empty((nu * nv, 3), dtype=np.float32)
     k = 0
@@ -75,8 +84,44 @@ def sample_surface(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge):
     return points, nudged
 
 
+def _evaluate_patch(uv_func, u, v):
+    """`uv_func` on the vertex arrays, as an (n, 3) float64 array (a constant component is broadcast)."""
+    components = [np.asarray(c, dtype=np.float64) for c in uv_func(u, v)]
+    if len(components) != 3:
+        raise ValueError("uv_func must return three components")
+    return np.stack(np.broadcast_arrays(*components, u), axis=1)[:, :3]
+
+
+def _sample_surface_arrays(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge):
+    """The vectorized form of `sample_surface`: the same arithmetic on every vertex at once."""
+    us = np.asarray(linear_range(u_range[0], u_range[1], nu), dtype=np.float64)
+    vs = np.asarray(linear_range(v_range[0], v_range[1], nv), dtype=np.float64)
+    u, v = (grid.ravel() for grid in np.meshgrid(us, vs, indexing="ij"))
+    p = _evaluate_patch(uv_func, u, v)
+    du = _evaluate_patch(uv_func, u + epsilon, v) - p
+    dv = _evaluate_patch(uv_func, u, v + epsilon) - p
+    # StaticArrays' cross product, the six products and three differences in order.
+    n = np.stack(
+        (
+            du[:, 1] * dv[:, 2] - du[:, 2] * dv[:, 1],
+            du[:, 2] * dv[:, 0] - du[:, 0] * dv[:, 2],
+            du[:, 0] * dv[:, 1] - du[:, 1] * dv[:, 0],
+        ),
+        axis=1,
+    )
+    length = norm(n)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        unit = np.where((length > 0)[:, None], n / length[:, None], np.array((0.0, 0.0, 1.0)))
+    return p.astype(np.float32), (p + normal_nudge * unit).astype(np.float32)
+
+
 class Surface(Mobject):
-    """A parametric mesh: `uv_func(u, v)` sampled on a `resolution` grid."""
+    """A parametric mesh: `uv_func(u, v)` sampled on a `resolution` grid.
+
+    `vectorized=True` samples the whole grid in three calls of `uv_func` on
+    arrays instead of three calls per vertex (see `sample_surface`); the
+    built-in surfaces use it, a function written with `math.sin` cannot.
+    """
 
     render_kind = "surface"
     is_interpolable = True
@@ -95,6 +140,7 @@ class Surface(Mobject):
         epsilon=1e-3,
         normal_nudge=1e-3,
         depth_test=True,
+        vectorized=False,
         **kwargs,
     ):
         nu, nv = (operator.index(n) for n in resolution)
@@ -104,7 +150,9 @@ class Surface(Mobject):
         self.rgba = np.empty((0, 4), dtype=np.float32)
         self.indices = triangle_indices(nu, nv)
         if uv_func is not None:
-            points, nudged = sample_surface(uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge)
+            points, nudged = sample_surface(
+                uv_func, u_range, v_range, nu, nv, epsilon, normal_nudge, vectorized=vectorized,
+            )
             self._set_mesh(points, nudged, np.tile(color_to_rgba(color, opacity), (nu * nv, 1)))
 
     @classmethod
@@ -275,9 +323,10 @@ ParametricSurface = Surface
 
 
 def _julia_trig():
-    from . import _julia_math
+    """Janim's deterministic libm (`janim.math`), imported late like the rest of the 3D zoo."""
+    from .. import math as deterministic_math
 
-    return _julia_math
+    return deterministic_math
 
 
 def Sphere(*, radius=1.0, resolution=(101, 51), **kwargs):
@@ -289,6 +338,7 @@ def Sphere(*, radius=1.0, resolution=(101, 51), **kwargs):
         u_range=(0.0, TAU),
         v_range=(0.0, math.pi),
         resolution=resolution,
+        vectorized=True,
         **kwargs,
     )
     factor = (r + 1e-3) / r
@@ -304,6 +354,7 @@ def Torus(*, r1=3.0, r2=1.0, resolution=(101, 101), **kwargs):
         u_range=(0.0, TAU),
         v_range=(0.0, TAU),
         resolution=resolution,
+        vectorized=True,
         **kwargs,
     )
 
@@ -315,6 +366,7 @@ def PlaneXY(*, x_range=(-3.0, 3.0), y_range=(-3.0, 3.0), resolution=(2, 2), **kw
         u_range=(float(x_range[0]), float(x_range[1])),
         v_range=(float(y_range[0]), float(y_range[1])),
         resolution=resolution,
+        vectorized=True,
         **kwargs,
     )
 
@@ -346,6 +398,7 @@ def Cylinder(*, radius=1.0, height=2.0, direction=OUT, resolution=(2, 25), **kwa
         u_range=(-h / 2, h / 2),
         v_range=(0.0, TAU),
         resolution=resolution,
+        vectorized=True,
         **kwargs,
     )
     return _aim_z_to(surface, direction)
@@ -361,6 +414,7 @@ def Cone(*, base_radius=1.0, height=1.0, direction=OUT, resolution=(2, 25), **kw
         u_range=(0.0, slant),
         v_range=(0.0, TAU),
         resolution=resolution,
+        vectorized=True,
         **kwargs,
     )
     return _aim_z_to(surface, direction)
