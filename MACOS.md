@@ -84,6 +84,77 @@ que cambia está marcado.
   que ya coincidían no cambiaron ni un byte.
 - **Lo que no cambió:** `live.py`, `cli.py`, `tex.py`, `video.py`.
 
+## Resultado · 2026-10-22, revisión tras el port a Windows (macOS 26.6.2, Apple M1, Python 3.14.7)
+
+**Nada cambió en el Mac.** Revisado con un clon limpio de `main` (`7f54aa3`)
+frente al último `main` anterior al port a Windows (`ce98cf2`), con el guion
+del `LINUX.md`, en esta sesión:
+
+- **Instalación desde cero** con las líneas de macOS del README.
+  `scripts/bootstrap.sh` (que ahora llama a `scripts/bootstrap.py`) crea el
+  venv con exactamente los mismos paquetes que antes (`pip list` idéntico,
+  `janim.pth` en su sitio); `gpu_info()` dice «Apple M1 · metal ·
+  integrated»; el `frame` y el `render -ql` del apartado «Check it» salen.
+- **Frames antes y después, byte a byte** (`tapf.py`, 640×360 a 10 fps):
+  `01_multicam` (140), `03_portals` (140), `04_lorenz_glow` (180),
+  `06_broadcast` (198, la del CRT con el `select`), `07_text_mask` (141) y
+  `11_chase_camera` (220) dan la misma lista de hashes con los dos checkouts.
+  Las cinco de referencia siguen idénticas entre Python y Julia. La clase de
+  `06_broadcast` es `BroadcastScene` (el `LINUX.md` decía `Broadcast`;
+  corregido).
+- **CLI** (sin `-p` ni la ventana desde la CLI, que abren algo que solo Alex
+  cierra): `render -qs`, `-j 2` (140 frames, 2 procesos; el mismo contenido
+  que el render de un proceso, a 45 dB de PSNR por la codificación por
+  segmentos, exactamente igual que en Julia), `-t` (ProRes 4444,
+  `yuva444p12le`), `-s --to 40`, `frame`, y `-o` relativa con `--out_dir`.
+- **Ventana en vivo** en proceso (`live(…, max_seconds=3)`, dos sesiones
+  seguidas): Cocoa, `CAMetalLayer`, `contentsScale` 2.0, 2560×1440 sobre
+  1280×720 puntos, 84 presentaciones por sesión, sin reconfiguraciones,
+  cierra limpia. `JANIM_HEADLESS=1` sigue dando el error con la lista de
+  adaptadores.
+- **Las 12 demos a 1080p60** (`bin/janim render … -qh`), una cada vez: 11
+  salen; `12_motion_blur` falla por la fuente «Fredoka Expanded», como en
+  Windows. Las de `01` a `07` son idénticas fotograma a fotograma a las
+  renderizadas el 2026-10-21, antes del port a Windows.
+
+**Python contra Julia en los mp4 a 1080p60** (decodificados y comparados
+fotograma a fotograma): `01`, `03`, `04`, `07` y `10` idénticos.
+`11_chase_camera` difiere en 28 fotogramas (972–1000, a 54–58 dB) con
+fotogramas crudos idénticos: el arnés a 1920×1080/60 da 1320 hashes iguales,
+y `frame 972` y `frame 990` por las dos CLIs dan los mismos píxeles. La causa
+es el codificador: Janim.jl escribe con el ffmpeg de FFMPEG_jll (x264 core
+164) y Janim.py con el del `PATH` (Homebrew ffmpeg 9.0.1, x264 core 165).
+Para comparar las dos bibliotecas valen los arneses, no los mp4. `02`, `05`,
+`06`, `08` y `09` difieren en todos los fotogramas, como en Linux: en `08` y
+`09` el texto del demo nombra el lenguaje; en `02`, `05` y `06` lo visible a
+ojo es el espaciado del `Tex` (Janim.jl separa los glifos; Python los compone
+con el kerning de LaTeX).
+
+**Tiempos a 1080p60**, reloj del proceso `bin/janim render` entero, un
+render cada vez (Julia a través del daemon caliente); los de Windows son los
+del `LINUX.md`, §5 (Ryzen 7 9700X, Radeon RX 9070 XT, DX12):
+
+| demo | frames | Mac Python | Mac Julia | Windows Python | Windows Julia |
+|---|---:|---:|---:|---:|---:|
+| 01_multicam | 840 | 10 s | 9 s | 7 s | 10 s |
+| 02_pendulum_glow | 1356 | 73 s | 82 s | 12 s | 18 s |
+| 03_portals | 840 | 16 s | 16 s | 8 s | 13 s |
+| 04_lorenz_glow | 1080 | 168 s | 163 s | 61 s | 16 s |
+| 05_rack_focus | 756 | 54 s | 54 s | 6 s | 11 s |
+| 06_broadcast | 1188 | 17 s | 11 s | 8 s | 13 s |
+| 07_text_mask | 846 | 78 s | 38 s | 51 s | 12 s |
+| 08_light_vs_pigment | 708 | 38 s | 40 s | 5 s | 10 s |
+| 09_reflection | 768 | 59 s | 58 s | 6 s | 11 s |
+| 10_motion_blur | 540 | 10 s | 6 s | 4 s | 9 s |
+| 11_chase_camera | 1320 | 24 s | 15 s | 12 s | 15 s |
+| 12_motion_blur | — | falla | falla | falla | falla |
+| total 01–11 | 10 242 | 547 s | 492 s | 180 s | 138 s |
+
+En las demos pesadas de GPU (`02`, `04`, `05`, `08`, `09`) Python y Julia
+tardan lo mismo en el M1: el límite es la GPU integrada, de 5 a 10 veces más
+lenta que la RX 9070 XT. `04` y `07` en Python siguen siendo trabajo de CPU
+(numpy), como en Windows.
+
 ## 0 · Reglas de trabajo
 
 - **El objetivo** es que en un M1 funcionen el render a fichero, la CLI
