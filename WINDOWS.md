@@ -19,9 +19,9 @@ aquí, en el mismo sitio.
 
 **El port está casi terminado.** Instalación, DX12, vídeo, fuentes, ventana
 en vivo con teclas y ratón, y Python contra Julia, comprobados en esta
-máquina el 2026-10-21 y el 22 (la ventana, a mano por Alex). Faltan el §6
-(`-p` y lo demás escrito para Unix) y la comparación de frames en Linux y
-macOS que pide el §0, porque un shader común cambió.
+máquina el 2026-10-21 y el 22 (la ventana, a mano por Alex), y `-p` abre
+el reproductor. Falta la comparación de frames en Linux y macOS que pide
+el §0, porque un shader común cambió.
 
 - **§1 · Preparar.** Python llegó con uv (`uv python install 3.14`), no con
   el instalador de python.org: no hay `py`, y `python` sigue siendo el atajo
@@ -82,7 +82,10 @@ macOS que pide el §0, porque un shader común cambió.
   recursión. «DejaVu Sans» resuelve a `DejaVuSans.ttf` del usuario entre 374
   caras, y el frame sale byte a byte igual que con
   `FREETYPE_ABSTRACTION_FONT_PATH`.
-- **§6 · Lo demás.** Sin empezar (`-p`, `open_output`).
+- **§6 · Lo demás.** Hecho: `open_output` usa `os.startfile` en `win32`
+  (`render … -p` abre el reproductor). Confirmado que las direcciones con
+  letra de unidad sobreviven (`C:\…\03_portals.py:Portals` renderiza). Lo
+  de GLFW cayó con el §7; `LIBRARY`, LaTeX y la caché valen como se decía.
 - **§7 · La ventana.** Hecha con lo previsto: `native_handles` devuelve el
   HWND y wgpu-py monta la `WGPUSurfaceSourceWindowsHWND`; `create_window`
   acepta `win32`; `JANIM_GLFW_PLATFORM` admite `win32` o `null`. **No

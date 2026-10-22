@@ -326,6 +326,12 @@ def resolve_output(flags, path, name):
 
 def open_output(path):
     """Open a finished render with the desktop's default player; warn without one."""
+    if sys.platform == "win32":
+        try:
+            os.startfile(str(path))  # the file's association, as a double click would
+        except OSError:
+            print(f"WARN -p: could not open {path}", file=sys.stderr, flush=True)
+        return
     order = ("open", "xdg-open") if sys.platform == "darwin" else ("xdg-open", "open")
     opener = next((name for name in order if shutil.which(name)), None)
     if opener is None:
