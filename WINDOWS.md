@@ -15,27 +15,35 @@ también el `MACOS.md` de este repo: el port a macOS es el precedente y casi
 todo lo que tocó (backend, plataforma de GLFW, fuentes) se vuelve a tocar
 aquí, en el mismo sitio.
 
-## Resultado · 2026-10-21, Windows 11 Home 25H2, Ryzen 7 9700X, Radeon RX 9070 XT, Python 3.14.9 (uv)
+## Resultado · 2026-10-21, Windows 11 Home 25H2, Ryzen 7 9700X, Radeon RX 9070 XT, Python 3.14.9
 
-**Hecho hasta el §3.** Instalación, DX12 y un frame a PNG, comprobados en
-esta máquina el 2026-10-21. El vídeo (§4), las fuentes (§5), lo demás de Unix
-(§6), la ventana (§7) y Python contra Julia (§8) siguen pendientes.
+**El port está casi terminado.** Instalación, DX12, vídeo, fuentes, ventana
+en vivo y Python contra Julia, comprobados en esta máquina el 2026-10-21 y
+la madrugada del 22. Faltan: probar a mano las teclas y el ratón de la
+ventana (§7), el §6 (`-p` y lo demás escrito para Unix) y la comparación de
+frames en Linux y macOS que pide el §0, porque un shader común cambió. Todo
+está en la rama `testing-windows`.
 
-- **§1 · Preparar.** Python llegó con uv (`uv python install 3.14` deja
-  `~\.local\bin\python3.14.exe`), no con el instalador de python.org: no hay
-  `py`, y `python` sigue siendo el atajo de la Store. ffmpeg 9.0.2 y MiKTeX
-  26.5 (`latex`, `dvisvgm` 3.6, `AutoInstall=1`) con winget. Git 2.56 ya
-  estaba, con `core.autocrlf=true`: los dos primeros clones salieron con
-  CRLF, como se preveía; `git clone -c core.autocrlf=input` lo evita. DejaVu
-  2.37 y Liberation 2.1.5 instaladas para el usuario
+- **§1 · Preparar.** Python llegó con uv (`uv python install 3.14`), no con
+  el instalador de python.org: no hay `py`, y `python` sigue siendo el atajo
+  de la Store. ffmpeg 9.0.2 y MiKTeX 26.5 (`latex`, `dvisvgm` 3.6,
+  `AutoInstall=1`) con winget. Git 2.56 ya estaba, con `core.autocrlf=true`:
+  los dos primeros clones salieron con CRLF, como se preveía. DejaVu 2.37 y
+  Liberation 2.1.5 instaladas para el usuario
   (`%LOCALAPPDATA%\Microsoft\Windows\Fonts`, registradas en HKCU).
-- **§2 · Instalar.** Confirmado: las wheels existen, y `import wgpu` pasa
-  `NATIVE_VERSION` sin instalar nada más. `bootstrap.sh` y `bin/janim` no
-  sirven, como se preveía; el venv se hizo a mano con uv (`uv venv --python
-  3.14 .venv`, `uv pip install --only-binary :all: --no-deps` con las
-  versiones de `pyproject.toml`, y el `janim.pth`), que es lo que documenta
-  el README. `bootstrap.cmd` y `bin/janim.cmd` siguen sin escribir.
-  **Falso:** que lo primero en fallar fuese el backend. Lo primero fue
+- **§2 · Instalar.** Confirmado: las wheels existen (wgpu-native 24.0.0.2 en
+  la de wgpu) y `import wgpu` pasa `NATIVE_VERSION`. Hecho lo sugerido: la
+  parte de Python del bootstrap vive en `scripts/bootstrap.py`;
+  `bootstrap.sh` lo llama igual que antes y `scripts/bootstrap.cmd` lo llama
+  tras crear el venv con `py -3.14`, con `uv venv --seed` o con
+  `python3.14`. **Dos cosas no previstas:** el `python3.14.exe` que deja uv
+  es un lanzador y `venv` no puede copiarlo (`ensurepip` falla), de ahí la
+  rama de uv; y pip falla con `[Errno 2]` dentro de rutas largas (el `numpy`
+  de la wheel pasa de MAX_PATH): un clon a dos o tres carpetas de la raíz no
+  lo sufre. `bin/janim.cmd` hace de `bin/janim` y PowerShell lo encuentra
+  como `bin\janim`. El `.gitattributes` (`bin/janim` y `*.sh` LF, `*.cmd`
+  CRLF) cierra el CRLF para quien clone con `autocrlf=true`. **Falso:** que
+  lo primero en fallar fuese el backend. Lo primero fue
   `UnicodeDecodeError: 'charmap' codec can't decode byte 0x81` al leer
   `stencil.wgsl`: `read_text()` sin `encoding` usa cp1252 en Windows (Python
   3.14 aún no trae UTF-8 por defecto; llega en 3.15) y los shaders llevan
@@ -49,26 +57,47 @@ esta máquina el 2026-10-21. El vídeo (§4), las fuentes (§5), lo demás de Un
   cambio, con Vulkan sobre el driver de AMD (26.10.1, LLPC), la primera
   `create_render_pipeline` moría con un *access violation* dentro de
   wgpu-native, sin nada en `JANIM_WGPU_LOG=info`: Vulkan en Windows no es una
-  opción con este driver. Con DX12,
-  `frame examples/tutorial/c1_01_basics/01_how_janim_works.py 20 f.png -qs`
-  sale en 1,2 s y se ve bien (texto en DejaVu, cuadrado, recta numérica).
-  **§3.3, confirmado:** `JANIM_HEADLESS=1` funciona: WARP sale como
-  «Microsoft Basic Render Driver», tipo `cpu`, el mismo frame tarda 1,2 s y
-  da otros bytes que la GPU. **§3.4, falso:** DX12 no da el nombre del
-  vendedor. wgpu-native pone en `vendor` la versión del driver
-  («32.0.32015.7029») y deja `description` vacía, así que el slug es
-  `320320157029` (WARP: `100261009711`, la build de Windows) y la versión
-  `unknown`. No rompe nada, pero el slug cambia con cada driver; si importa,
-  derivarlo de `vendor_id` (0x1002 AMD, 0x10DE NVIDIA, 0x8086 Intel, 0x1414
-  Microsoft). Alineaciones y `float32-filterable` no se han mirado.
-- **§4 · Vídeo.** Confirmado el fallo, sin tocar: `render … -qs` muere en
-  `video.py:290` con `OSError: [WinError 10038] Se intentó realizar una
-  operación en un elemento que no es un socket`.
-- **§5 · Fuentes.** Sin tocar: con `FREETYPE_ABSTRACTION_FONT_PATH` apuntando
-  a la carpeta del usuario, DejaVu se encuentra; sin la variable, no.
-- **§6, §7, §8.** Sin empezar.
-- **Lo que no cambió:** `video.py`, `glyphs.py`, `glfw.py`, `live.py`,
-  `cli.py`, `bootstrap.sh`, `bin/janim`.
+  opción con este driver. **§3.3, confirmado:** `JANIM_HEADLESS=1` funciona:
+  WARP sale como «Microsoft Basic Render Driver», tipo `cpu`, y da otros
+  bytes que la GPU. **§3.4, falso:** DX12 no da el nombre del vendedor.
+  wgpu-native pone en `vendor` la versión del driver («32.0.32015.7029») y
+  deja `description` vacía, así que el slug es `320320157029` (WARP:
+  `100261009711`, la build de Windows) y la versión `unknown`. No rompe
+  nada, pero el slug cambia con cada driver; si importa, derivarlo de
+  `vendor_id` (0x1002 AMD, 0x10DE NVIDIA, 0x8086 Intel, 0x1414 Microsoft).
+  **Lo que FXC no compila:** `effects.wgsl` escribía `grille[col] = 1.0`,
+  una componente de `vec3` con índice dinámico, y la demo 06 (efecto CRT)
+  moría con `X3500: array reference cannot be used as an l-value`. Era la
+  única escritura así en los shaders; ahora es un `select` con el mismo
+  valor, en las dos bibliotecas. Las doce demos a 1280×720 y 60 fps salen
+  (la 12 pide la fuente «Fredoka Expanded», no instalada), y en Python las
+  04 y 07 tardan 50 s frente a 11 y 9 en Julia: CPU, no GPU.
+- **§4 · Vídeo.** Confirmado el fallo (`WinError 10038` en `video.py:290`) y
+  hecho el arreglo mínimo: en `win32` no hay `select`, se escribe sobre el
+  pipe no bloqueante y se duerme 1 ms cuando `BlockingIOError` dice que está
+  lleno. `finish` valía tal cual. **La granja `-j 2`** funciona sin tocar
+  `concat_listing`: las rutas van entre comillas simples y el demuxer no
+  interpreta la `\` dentro de ellas.
+- **§5 · Fuentes.** Hecho: `_font_catalog` gana la rama `win32` con las dos
+  carpetas de BaseDirs, en su orden (la del sistema y la del usuario), sin
+  recursión. «DejaVu Sans» resuelve a `DejaVuSans.ttf` del usuario entre 374
+  caras, y el frame sale byte a byte igual que con
+  `FREETYPE_ABSTRACTION_FONT_PATH`.
+- **§6 · Lo demás.** Sin empezar (`-p`, `open_output`).
+- **§7 · La ventana.** Hecha con lo previsto: `native_handles` devuelve el
+  HWND y wgpu-py monta la `WGPUSurfaceSourceWindowsHWND`; `create_window`
+  acepta `win32`; `JANIM_GLFW_PLATFORM` admite `win32` o `null`. **No
+  previsto:** `_headless_env` tomaba Windows por headless (no hay `DISPLAY`)
+  y GLFW arrancaba en Null; ahora Win32 cuenta como macOS. La superficie
+  ofrece `bgra8unorm-srgb` primero (se usa `bgra8unorm`), mailbox, Fifo e
+  Immediate, y CopySrc; `framebuffer_size` es `(854, 480)` para una ventana
+  de 854×480. El bucle en vivo con `03_portals` a 15 fps presentó 69 frames
+  en 5 s sin reconfigurar. **Sin probar a mano:** teclas, ratón y dos
+  previews seguidas.
+- **§8 · Python contra Julia.** Hecho con los dos arneses del `MACOS.md` de
+  Janim.jl, a 640×360 y 10 fps, un proceso por render: las cinco demos dan
+  frames **idénticos byte a byte** en DX12 (140, 140, 180, 141 y 220).
+- **Lo que no cambió:** `live.py`, `cli.py`, `bin/janim`.
 
 ## 0 · Reglas de trabajo
 

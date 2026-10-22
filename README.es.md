@@ -16,9 +16,8 @@ aritmética no depende de la libm del sistema.
 - **Linux** con un driver Vulkan (Mesa RADV, lavapipe u otro), **macOS 14 o
   posterior en Apple Silicon**, donde Janim dibuja con Metal (probado en
   macOS 26.6, Apple M1), o **Windows 11**, donde dibuja con DX12 (probado en
-  Windows 11 25H2, AMD Radeon RX 9070 XT). En Windows el port es parcial: los
-  frames sueltos se renderizan; el vídeo y la ventana viva están por escribir
-  (ver [`WINDOWS.md`](WINDOWS.md)).
+  Windows 11 25H2, AMD Radeon RX 9070 XT; el port es nuevo, ver
+  [`WINDOWS.md`](WINDOWS.md)).
 - **Python 3.14.**
 - **`ffmpeg`** en el `PATH`, para escribir vídeo.
 - **`latex` y `dvisvgm`** en el `PATH`, para `Tex` y `MathTex`.
@@ -69,14 +68,13 @@ si falta); los dos quedan en `/Library/TeX/texbin`, que debe estar en el
 
 ### Windows
 
-En PowerShell. [uv](https://docs.astral.sh/uv/) descarga Python 3.14 y
-construye el entorno (`scripts/bootstrap.sh` espera `.venv/bin/python` y
-todavía no sirve aquí); ffmpeg y MiKTeX, que trae `dvisvgm`, vienen de
-winget. Git for Windows solo hace falta para clonar: hazlo con
-`git clone -c core.autocrlf=input …`, o los scripts bash salen con CRLF.
+En PowerShell. Python 3.14 viene de winget (`Python.Python.3.14`, con el
+lanzador `py`) o de [uv](https://docs.astral.sh/uv/) (`astral-sh.uv`; el
+bootstrap le pide la 3.14); ffmpeg y MiKTeX, que trae `dvisvgm`, vienen
+también de winget. Git for Windows solo hace falta para clonar.
 
 ```powershell
-winget install -e --id astral-sh.uv
+winget install -e --id Python.Python.3.14
 winget install -e --id Gyan.FFmpeg
 winget install -e --id MiKTeX.MiKTeX      # opcional: Tex y MathTex
 ```
@@ -84,34 +82,25 @@ winget install -e --id MiKTeX.MiKTeX      # opcional: Tex y MathTex
 Abre un terminal nuevo para que cargue el `PATH` y, dentro del clon:
 
 ```powershell
-uv venv --python 3.14 .venv
-uv pip install --python .venv\Scripts\python.exe --only-binary :all: --no-deps numpy==2.4.6 wgpu==0.21.0 glfw==2.10.2 freetype-py==2.5.1 cffi==2.1.1 pycparser==3.0 sniffio==1.3.1
-.venv\Scripts\python.exe -c "import pathlib, sysconfig; (pathlib.Path(sysconfig.get_path('purelib')) / 'janim.pth').write_text(str(pathlib.Path.cwd()) + '\n')"
+scripts\bootstrap.cmd       # el bootstrap para cmd y PowerShell: py -3.14, si no uv, si no python3.14
 ```
-
-Son las versiones que fija `pyproject.toml` (`[project]` y
-`[tool.janim.bootstrap]`, sin `rubicon-objc`, que es solo de macOS), y el
-`.pth` hace importable el clon, como hace el bootstrap.
 
 Fuentes: descarga [DejaVu](https://github.com/dejavu-fonts/dejavu-fonts/releases)
 (y [Liberation](https://github.com/liberationfonts/liberation-fonts/releases)),
 selecciona los `.ttf`, clic derecho, *Instalar*. Van a
-`%LOCALAPPDATA%\Microsoft\Windows\Fonts`, una carpeta que Janim todavía no
-conoce, así que nómbrala en cada sesión que renderice texto:
-
-```powershell
-$env:FREETYPE_ABSTRACTION_FONT_PATH = "$env:LOCALAPPDATA\Microsoft\Windows\Fonts"
-```
+`%LOCALAPPDATA%\Microsoft\Windows\Fonts`, donde Janim las encuentra.
 
 Si instalaste MiKTeX, abre MiKTeX Console y pon la instalación de paquetes
 que falten en *Always* (o ejecuta
 `initexmf --set-config-value=[MPM]AutoInstall=1`); si no, el primer `Tex` se
 queda esperando un diálogo que nadie ve.
 
-`bin/janim` es bash; en Windows llama al módulo:
+La línea de comandos también es `bin\janim` aquí (`bin\janim.cmd`, el gemelo
+del `bin/janim` de bash):
 
 ```powershell
-.venv\Scripts\python.exe -m janim.cli frame hola.py 20 f.png -ql
+bin\janim render hola.py -ql
+bin\janim hola.py
 ```
 
 ## Una escena mínima
@@ -176,10 +165,11 @@ bin/janim render examples/demo/03_portals.py -ql
 
 ## Limitaciones conocidas
 
-- **Windows es un port parcial.** Los frames sueltos se renderizan (DX12); el
-  vídeo y la ventana viva todavía no. Los frames son reproducibles dentro de
-  cada ruta (RADV, lavapipe, Metal, DX12 o WARP), y las rutas pueden diferir
-  entre sí en un píxel en algunos bordes.
+- **Windows es nuevo.** El render, la granja y la ventana viva corren sobre
+  DX12, comprobado en una sola máquina (Windows 11, AMD Radeon RX 9070 XT).
+  Los frames son reproducibles dentro de cada ruta (RADV, lavapipe, Metal,
+  DX12 o WARP), y las rutas pueden diferir entre sí en un píxel en algunos
+  bordes.
 - **No hay desenfoque de movimiento en el vídeo.** `Scene` no acepta
   `motion_blur` ni `shutter`, y la CLI rechaza `--motion-blur`. Lo que sí
   existe es `render_frame_motion`, que promedia varias exposiciones en un solo
