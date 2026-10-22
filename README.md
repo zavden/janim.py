@@ -204,6 +204,7 @@ them, are written in Spanish.
   which averages several exposures into a single frame. The lessons in
   `examples/tutorial/c3_05_motion_blur/` still describe the in-video version;
   they will be revised.
+- **What else is open** is listed in [`TODO.md`](TODO.md).
 
 ## License
 

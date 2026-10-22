@@ -202,6 +202,7 @@ bin/janim render examples/demo/03_portals.py -ql
   existe es `render_frame_motion`, que promedia varias exposiciones en un solo
   frame. Las lecciones de `examples/tutorial/c3_05_motion_blur/` todavía
   describen la versión en el vídeo; se revisarán.
+- **Lo demás que queda abierto** está en [`TODO.md`](TODO.md).
 
 ## Licencia
 

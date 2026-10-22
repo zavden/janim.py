@@ -1,6 +1,6 @@
 """Janim's lazy public entry points; importing the package opens no driver."""
 
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 __all__ = [
     "render_solid_frame",
     "render_two_band_frame",
