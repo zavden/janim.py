@@ -72,7 +72,7 @@ clones o un `git worktree add ../janim_py-antes ce98cf2` (con su propio
 `scripts/bootstrap.sh`). Para cada demo, una lista de hashes con cada
 checkout, y compáralas frame a frame:
 
-- **`06_broadcast`** (clase `Broadcast`): es la del CRT, la única con un
+- **`06_broadcast`** (clase `BroadcastScene`): es la del CRT, la única con un
   motivo para cambiar. Debe dar la misma lista. Si no, mira el shader: el
   `select` tiene que dar exactamente `1.0` en la franja `col` y
   `1.0 - mask_depth * intensity` en las otras dos.
