@@ -103,6 +103,33 @@ bin\janim render hola.py -ql
 bin\janim hola.py
 ```
 
+Tres cosas que Windows hace distinto. Clona como siempre: `.gitattributes`
+deja los scripts bash con LF diga lo que diga `core.autocrlf`. Deja el clon
+en una ruta corta (`C:\Users\tú\proyectos\…`): pip puede fallar en una
+carpeta muy profunda, en el límite de 260 caracteres de Windows. Y `python` a
+secas puede ser el atajo de la Store; el bootstrap y `bin\janim` usan el
+intérprete del venv, así que no hay nada que cambiar (Configuración →
+Aplicaciones → Configuración avanzada de aplicaciones → Alias de ejecución de
+aplicaciones apaga el atajo). Usa Windows Terminal y no la consola antigua:
+la barra de progreso es ANSI.
+
+### Comprobar
+
+Desde el clon, en cualquier plataforma (`.venv\Scripts\python.exe` y
+`bin\janim` en Windows):
+
+```bash
+.venv/bin/python -c "from janim.backend.wgpu.context import gpu_info; print(gpu_info())"
+bin/janim frame  examples/tutorial/c1_01_basics/01_how_janim_works.py 20 frame.png -qs
+bin/janim render examples/tutorial/c1_01_basics/01_how_janim_works.py -ql -o hola.mp4
+```
+
+La primera línea dice la GPU y el backend (`vulkan`, `metal` o `dx12`; con
+`JANIM_HEADLESS=1`, lavapipe o WARP, `kind='cpu'`). La segunda escribe un
+frame sin ffmpeg; la tercera es la cadena entera, ffmpeg incluido, y con `-p`
+abre el vídeo. Una escena con `Tex` o `MathTex` comprueba LaTeX y `dvisvgm`;
+en Windows la primera instala paquetes de MiKTeX y tarda.
+
 ## Una escena mínima
 
 ```python

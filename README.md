@@ -103,6 +103,33 @@ bin\janim render hello.py -ql
 bin\janim hello.py
 ```
 
+Three things Windows does differently. Clone as usual: `.gitattributes`
+keeps the bash scripts with LF whatever `core.autocrlf` says. Keep the
+checkout in a short path (`C:\Users\you\projects\…`): pip can fail in a very
+deep folder, at Windows' 260-character limit. And `python` on its own may be
+the Store's shortcut; the bootstrap and `bin\janim` use the venv's
+interpreter, so there is nothing to change (Settings → Apps → Advanced app
+settings → App execution aliases turns the shortcut off). Use Windows
+Terminal rather than the old console: the progress bar is ANSI.
+
+### Check it
+
+From the checkout, on every platform (`.venv\Scripts\python.exe` and
+`bin\janim` on Windows):
+
+```bash
+.venv/bin/python -c "from janim.backend.wgpu.context import gpu_info; print(gpu_info())"
+bin/janim frame  examples/tutorial/c1_01_basics/01_how_janim_works.py 20 frame.png -qs
+bin/janim render examples/tutorial/c1_01_basics/01_how_janim_works.py -ql -o hello.mp4
+```
+
+The first line names the GPU and the backend (`vulkan`, `metal` or `dx12`;
+with `JANIM_HEADLESS=1`, lavapipe or WARP, `kind='cpu'`). The second writes
+one frame without ffmpeg; the third is the whole chain, ffmpeg included, and
+`-p` on it opens the video. A scene with `Tex` or `MathTex` checks LaTeX and
+`dvisvgm`; on Windows the first one installs MiKTeX packages and takes a
+while.
+
 ## A minimal scene
 
 ```python
