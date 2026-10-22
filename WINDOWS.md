@@ -18,11 +18,10 @@ aquí, en el mismo sitio.
 ## Resultado · 2026-10-21, Windows 11 Home 25H2, Ryzen 7 9700X, Radeon RX 9070 XT, Python 3.14.9
 
 **El port está casi terminado.** Instalación, DX12, vídeo, fuentes, ventana
-en vivo y Python contra Julia, comprobados en esta máquina el 2026-10-21 y
-la madrugada del 22. Faltan: probar a mano las teclas y el ratón de la
-ventana (§7), el §6 (`-p` y lo demás escrito para Unix) y la comparación de
-frames en Linux y macOS que pide el §0, porque un shader común cambió. Todo
-está en la rama `testing-windows`.
+en vivo con teclas y ratón, y Python contra Julia, comprobados en esta
+máquina el 2026-10-21 y el 22 (la ventana, a mano por Alex). Faltan el §6
+(`-p` y lo demás escrito para Unix) y la comparación de frames en Linux y
+macOS que pide el §0, porque un shader común cambió.
 
 - **§1 · Preparar.** Python llegó con uv (`uv python install 3.14`), no con
   el instalador de python.org: no hay `py`, y `python` sigue siendo el atajo
@@ -92,8 +91,8 @@ está en la rama `testing-windows`.
   ofrece `bgra8unorm-srgb` primero (se usa `bgra8unorm`), mailbox, Fifo e
   Immediate, y CopySrc; `framebuffer_size` es `(854, 480)` para una ventana
   de 854×480. El bucle en vivo con `03_portals` a 15 fps presentó 69 frames
-  en 5 s sin reconfigurar. **Sin probar a mano:** teclas, ratón y dos
-  previews seguidas.
+  en 5 s sin reconfigurar. **Teclas y ratón:** probados a mano por Alex el
+  2026-10-22: funcionan.
 - **§8 · Python contra Julia.** Hecho con los dos arneses del `MACOS.md` de
   Janim.jl, a 640×360 y 10 fps, un proceso por render: las cinco demos dan
   frames **idénticos byte a byte** en DX12 (140, 140, 180, 141 y 220).
