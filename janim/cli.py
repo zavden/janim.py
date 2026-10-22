@@ -651,6 +651,16 @@ def dispatch(argv):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else list(argv)
+    if sys.platform == "win32":
+        # Python 3.14 still encodes a piped or redirected stdout with the
+        # ANSI code page (cp1252), so a scene's print of «α» or «▕» died with
+        # UnicodeEncodeError the moment the output was not a console; UTF-8
+        # is the default only from 3.15. The variable reaches the farm's
+        # workers, which inherit the environment.
+        os.environ.setdefault("PYTHONUTF8", "1")
+        for stream in (sys.stdout, sys.stderr):
+            if hasattr(stream, "reconfigure"):
+                stream.reconfigure(encoding="utf-8")
     try:
         reply = dispatch(argv)
     except CLIExit as exit_request:
