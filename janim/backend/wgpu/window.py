@@ -223,7 +223,7 @@ def create_window(width, height, *, title="Janim", visible=True):
     window = window_system.create_window_noapi(width, height, title=title, visible=visible)
     platform = window_system.window_platform()
     if visible and not window_system.null_platform():
-        if platform in ("wayland", "x11", "cocoa"):
+        if platform in ("wayland", "x11", "cocoa", "win32"):
             try:
                 presenter = GPUPresenter(_shared_gpu(), window, platform)
                 presenter.configure(*window_system.framebuffer_size(window))
@@ -233,7 +233,7 @@ def create_window(width, height, *, title="Janim", visible=True):
                 raise
         else:
             window_system.close_context(window)
-            raise RuntimeError(f"the preview surface on the {platform} platform is not written (Wayland, X11 and Cocoa are): render to a file")
+            raise RuntimeError(f"the preview surface on the {platform} platform is not written (Wayland, X11, Cocoa and Win32 are): render to a file")
     return window
 
 

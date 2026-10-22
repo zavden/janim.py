@@ -51,8 +51,8 @@ def _glfw():
 def _headless_env():
     if os.environ.get("JANIM_HEADLESS") == "1":
         return True
-    if sys.platform == "darwin":
-        # Cocoa sets no DISPLAY variable; the window server is always there.
+    if sys.platform in ("darwin", "win32"):
+        # Cocoa and Win32 set no DISPLAY variable; the window server is always there.
         return False
     return not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
 
@@ -76,6 +76,8 @@ def ensure_window_system():
         platforms = {"null": glfw.PLATFORM_NULL, "wayland": glfw.PLATFORM_WAYLAND, "x11": glfw.PLATFORM_X11}
         if sys.platform == "darwin":
             platforms = {"null": glfw.PLATFORM_NULL, "cocoa": glfw.PLATFORM_COCOA}
+        elif sys.platform == "win32":
+            platforms = {"null": glfw.PLATFORM_NULL, "win32": glfw.PLATFORM_WIN32}
         if requested:
             if requested not in platforms:
                 expected = ", ".join(list(platforms)[:-1]) + " or " + list(platforms)[-1]
@@ -93,7 +95,7 @@ def ensure_window_system():
             _point_xkb_at_x_locale()
         if not glfw.init():
             raise RuntimeError(f"glfwInit failed on {glfw.get_version_string().decode()}")
-        names = {glfw.PLATFORM_WAYLAND: "wayland", glfw.PLATFORM_X11: "x11", glfw.PLATFORM_COCOA: "cocoa", glfw.PLATFORM_NULL: "null"}
+        names = {glfw.PLATFORM_WAYLAND: "wayland", glfw.PLATFORM_X11: "x11", glfw.PLATFORM_COCOA: "cocoa", glfw.PLATFORM_WIN32: "win32", glfw.PLATFORM_NULL: "null"}
         _STATE["platform"] = names.get(glfw.get_platform(), "other")
         _STATE["null"] = _STATE["platform"] == "null"
         _STATE["ready"] = True
@@ -101,7 +103,7 @@ def ensure_window_system():
 
 
 def window_platform():
-    """`wayland`, `x11`, `cocoa`, `null`, `other` or `none` before the first window."""
+    """`wayland`, `x11`, `cocoa`, `win32`, `null`, `other` or `none` before the first window."""
     return _STATE["platform"]
 
 
@@ -134,6 +136,9 @@ def native_handles(window):
     if platform == "cocoa":
         # The NSWindow; wgpu-py puts a CAMetalLayer on its contentView.
         return {"platform": "cocoa", "window": int(glfw.get_cocoa_window(window.handle))}
+    if platform == "win32":
+        # The HWND; wgpu-py adds the hinstance from GetModuleHandleW.
+        return {"platform": "win32", "window": int(glfw.get_win32_window(window.handle))}
     raise ValueError(f"no surface source for the {platform} platform")
 
 
