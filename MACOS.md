@@ -12,6 +12,10 @@ para la otra. Si tienes los dos clones, lee también ese fichero.
 
 ## Resultado · 2026-10-21, macOS 26.6.2, Apple M1, Python 3.14.7 (Homebrew)
 
+**El port está terminado.** Render a fichero, CLI y ventana en vivo con
+teclas y ratón, verificados por Alex el 2026-10-21 en este M1, en las dos
+bibliotecas; las siete primeras demos renderizadas a 1080p60 en las dos.
+
 Probado en el Mac, sección por sección. Casi todo lo previsto era cierto; lo
 que cambia está marcado.
 
@@ -56,10 +60,9 @@ que cambia está marcado.
   del frame ocupa exactamente un bloque 2×2 del swapchain. Dos previews
   seguidas abren y cierran limpias; el drenaje de foco de Wayland no estorba
   (termina sin agotar el tope). El hilo del playhead no toca GLFW, no hubo
-  que cambiar nada. **No probado a mano:** teclas y ratón (este proceso no
-  pudo enviar pulsaciones ni capturar la pantalla por permisos de macOS);
-  los callbacks usan coordenadas lógicas de forma consistente, así que no se
-  espera el problema del §6.7.
+  que cambiar nada. **Teclas y ratón:** probados a mano por Alex, incluido
+  el movimiento de cámara: funcionan, y el problema del §6.7 no aparece
+  (los callbacks usan coordenadas lógicas de forma consistente).
 - **§7 · Python contra Julia.** Hecho en el mismo Mac, con los dos arneses
   del §6 de Janim.jl. Cuatro demos (`01`, `03`, `04`, `07`) salieron
   idénticas byte a byte a la primera; `11_chase_camera` difería en los 220
