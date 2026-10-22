@@ -15,6 +15,78 @@ comparten los shaders WGSL, y el único shader común que cambió es el mismo en
 las dos (§2). Los arneses de comparación están en el `MACOS.md` de Janim.jl,
 §6.
 
+## Resultado · 2026-10-22, Fedora 44, Ryzen 7 9700X, Radeon RX 9070 XT (RADV, Mesa 26.2.5), Python 3.14.8, sway 1.11 (Wayland) + Xwayland
+
+**Nada cambió en Linux.** Hechos el §1 (lo comprobable sin reinstalar
+Python), el §2, el §3, el §4 y el §5 entre `ce98cf2` y `main`
+(`7f54aa3`), con dos clones limpios y un `scripts/bootstrap.sh` cada uno,
+el 2026-10-22.
+
+- **§1 · Instalar.** Los once paquetes de la línea `dnf` del README existen
+  en los repositorios de Fedora 44 (`dnf repoquery`). Los de la línea `apt`
+  existen en Debian (`packages.debian.org`), pero `python3.14` solo en
+  `forky`/`sid`, no en Debian 13 (`trixie`); Ubuntu 26.04 (`resolute`) lo
+  tiene: la nota de `uv` del README cubre el hueco. Las lecciones `03_text`,
+  `05_physics_warning` y `06_cli_and_farm` piden Liberation Serif y Mono,
+  que el README nombra pero las líneas `dnf`/`apt` no (`liberation-fonts`,
+  `fonts-liberation`); aquí estaban instaladas. `bootstrap.sh` →
+  `bootstrap.py`: el `pip list` de los dos venv es idéntico (cffi 2.1.1,
+  freetype-py 2.5.1, glfw 2.10.2, numpy 2.4.6, pycparser 3.0, sniffio
+  1.3.1, wgpu 0.21.0; `rubicon-objc` saltado por su marcador).
+- **§2 · Frames, byte a byte.** Las 134 clases `Scene` de `examples/`:
+  **134 renders, 8 544 frames, idénticos** antes y después a 640×360 y 10
+  fps en RADV (un SHA-256 por frame por `frame_tap`, un proceso por render).
+  La `06_broadcast` (`BroadcastScene`), la del CRT, da los mismos 198
+  frames. Python contra Julia (Janim.jl en `main`): `01`, `03`, `04`, `07`,
+  `11` idénticas como en Windows, y también `10` (90 frames) y `12` (66;
+  aquí Fredoka está instalada); `02`, `05`, `06`, `08` y `09` difieren, como
+  ya diferían antes del port (`MACOS.md` de Janim.jl, §6).
+- **§3 · El código común.** `gpu_info()` da `radv`, `vulkan`, `Mesa
+  26.2.5`, `discrete`; con `JANIM_HEADLESS=1`, llvmpipe y `cpu`. `import
+  janim` carga; `_BACKEND_TYPES["DX12"]` existe en Linux (4). GLFW: sin
+  `DISPLAY` ni `WAYLAND_DISPLAY` → `null`; con `JANIM_HEADLESS=1` → `null`;
+  `JANIM_GLFW_PLATFORM=win32` o `cocoa` → «expected null, wayland or x11».
+  `video.py`: `03_portals` a `-ql` (210 frames) y con `-j 2` (140) dan el
+  mismo número de frames y los mismos frames decodificados (`framemd5`)
+  antes y después. Las nueve lecturas con `encoding="utf-8"`: los shaders
+  (cualquier render), `Tex` (la lección LaTeX) y la granja (`-j 2`) pasan.
+  Las fuentes: `03_text` encuentra DejaVu y Liberation.
+- **§4 · CLI y ventana.** `-p` llama a `xdg-open` (stub) con la ruta
+  correcta; `-j 2`; `-t`; `-s --to 40 --out_dir`; `frame 60`; la lección
+  LaTeX; el multi-escena `:Intro`; `ping` y `check` sin daemon. La ventana:
+  `live()` en Wayland y en X11 (dos sesiones seguidas cada una, 81 y 89
+  frames en 3 s) y la de la CLI cerrada con Esc (frame 66).
+- **§5 · Tiempos.** Abajo, junto a los de Windows.
+
+### §5 · Tiempos a 1920×1080 y 60 fps, Linux junto a Windows
+
+Linux: Fedora 44, Ryzen 7 9700X, Radeon RX 9070 XT (RADV, Mesa 26.2.5),
+`main` en `7f54aa3`, un render cada vez, reloj de pared del proceso entero
+(`bin/janim render … -r 1920x1080 --fps 60`; Python arranca en ~1 s), el
+2026-10-22. Windows: la tabla de §5. La 12 aquí sí
+sale: Fredoka está instalada.
+
+| demo | frames | Python Linux | Python Windows | Julia Linux | Julia Windows |
+|---|---:|---:|---:|---:|---:|
+| 01_multicam | 840 | 5,5 s | 7 s | 8,0 s | 10 s |
+| 02_pendulum_glow | 1356 | 9,5 s | 12 s | 15,1 s | 18 s |
+| 03_portals | 840 | 6,9 s | 8 s | 10,9 s | 13 s |
+| 04_lorenz_glow | 1080 | 25,2 s | 61 s | 14,5 s | 16 s |
+| 05_rack_focus | 756 | 5,3 s | 6 s | 9,0 s | 11 s |
+| 06_broadcast | 1188 | 8,1 s | 8 s | 10,7 s | 13 s |
+| 07_text_mask | 846 | 44,0 s | 51 s | 9,8 s | 12 s |
+| 08_light_vs_pigment | 708 | 5,0 s | 5 s | 8,5 s | 10 s |
+| 09_reflection | 768 | 5,7 s | 6 s | 9,6 s | 11 s |
+| 10_motion_blur | 540 | 3,9 s | 4 s | 7,4 s | 9 s |
+| 11_chase_camera | 1320 | 9,8 s | 12 s | 12,3 s | 15 s |
+| 12_motion_blur | 396 | 3,0 s | falla (fuente) | 5,8 s | falla (fuente) |
+
+Los recuentos de frames son los mismos que en Windows. A esta resolución,
+y a través de x264, los mp4 de Python y de Julia decodifican a los mismos
+frames (`ffmpeg -f framemd5`) en las siete demos que coinciden a 640×360
+(`01`, `03`, `04`, `07`, `10`, `11`, `12`); los otros cinco pares difieren,
+como abajo.
+
 ## 0 · Reglas de trabajo
 
 - **El objetivo** es confirmar que en Linux nada cambió: ni el código que
