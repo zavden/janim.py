@@ -66,7 +66,7 @@ class MulticamScene(Scene):
             label.shift((0.18, -0.28, 0))
             return label
 
-        tags = [tag("PLANTA", w_tl), tag("PERSPECTIVA", w_tr), tag("ALZADO", w_bl), tag("PERFIL", w_br)]
+        tags = [tag("TOP", w_tl), tag("PERSPECTIVA", w_tr), tag("ALZADO", w_bl), tag("PERFIL", w_br)]
         self.use_composition(
             Composition(
                 Layer(*world, camera=cam_top, window=w_tl),
@@ -153,9 +153,9 @@ class ChaseScene(Scene):
             label.shift((0.14, -0.26, 0))
             return label
 
-        caption = Text("tres cámaras, un mundo — el HUD no derrapa: fix_in_frame", size=0.34, color=GREY_C)
+        caption = Text("three cameras, one world — the HUD does not drift: fix_in_frame", size=0.34, color=GREY_C)
         caption.to_corner(DL, buff=0.4)
-        hud = [w_chase, w_map, tag("PERSECUCIÓN", w_chase), tag("PLANTA", w_map), caption]
+        hud = [w_chase, w_map, tag("CHASE", w_chase), tag("TOP", w_map), caption]
         for mob in hud:
             mob.fix_in_frame()
         self.use_composition(

@@ -1,23 +1,23 @@
-"""Demo 07 · LETRAS DE MAR — el título como MÁSCARA de un mundo 3D animado
+"""Demo 07 · SEA LETTERS — the title as a MASK over an animated 3D world
 
-Un `Text` es un mobject como cualquier otro, así que puede ser el recorte de
-una capa: `crop(sea, inside=word)`. Y la capa recortada tiene su PROPIA
-cámara (`camera=`), inclinada sobre un mar de olas que se mueve por updater
-con normales analíticas (luz de verdad, no un degradado). Dentro de cada
-letra hay un render 3D iluminado; el resto de la pantalla no sabe que existe.
+A `Text` is a mobject like any other, so it can clip a layer:
+`crop(sea, inside=word)`. And the clipped layer has its OWN camera
+(`camera=`), tilted over a sea of waves moved by an updater with analytic
+normals (real lighting, not a gradient). Inside each letter is a lit 3D
+render; the rest of the screen does not know it exists.
 
-El final es el plano clásico de cabecera: la máscara se agranda hasta que el
-ojo entra por la «I» y aparece el mar entero. La máscara es un mobject, así
-que ese vuelo es un `animate` cualquiera con un `about_point`.
+The ending is the classic opening-title shot: the mask grows until the
+eye enters through the “I” and the whole sea appears. The mask is a
+mobject, so that flight is an ordinary `animate` with an `about_point`.
 
-Manim no tiene máscaras: un `Text` solo se puede dibujar, no recortar.
+Manim has no masks: a `Text` can only be drawn, not used to clip.
 
-Las muestras de la malla salen de `linear_range`; las olas se calculan para
-todos los vértices a la vez con el `sin` y el `cos` de `janim.math` sobre
-arrays (los mismos bits que llamándolos uno a uno, y los mismos que Janim.jl),
-se escriben en los arrays vivos `points`/`d_normal_points` de la superficie y
-se avisa con `note_changed_data()`; y un `animate` con dos operaciones es una
-cadena del constructor `.animate`.
+Mesh samples come from `linear_range`; waves are calculated for all
+vertices at once using `janim.math`'s `sin` and `cos` on arrays (the same
+bits as calling them one by one, and the same as Janim.jl), written into
+the surface's live `points`/`d_normal_points` arrays, then reported with
+`note_changed_data()`; an `animate` with two operations is a chain on the
+`.animate` builder.
 
     bin/janim render examples/demo/07_text_mask.py -ql
 """
@@ -32,7 +32,7 @@ from janim.math import cos, linear_range, sin
 
 class TextMask(Scene):
     def construct(self):
-        # ── el mar: una superficie animada con normales analíticas ─────────
+        # ── the sea: an animated surface with analytic normals ─────────
         X, Y, NU, NV = 12.0, 5.5, 101, 51
         sea = PlaneXY(
             x_range=(-X, X),
@@ -42,14 +42,14 @@ class TextMask(Scene):
             opacity=1.0,
             shading=(0.25, 0.35, 0.5),
         )
-        # las muestras u, v de cada vértice, en el orden de la malla (u fuera, v dentro)
+        # each vertex's u, v samples, in mesh order (u outermost, v innermost)
         us = np.asarray(linear_range(-X, X, NU))
         vs = np.asarray(linear_range(-Y, Y, NV))
         U, V = (grid.ravel() for grid in np.meshgrid(us, vs, indexing="ij"))
 
         def waves(m, dt):
-            # las olas de TODOS los vértices a la vez: `sin` y `cos` de janim.math
-            # aceptan arrays y dan los mismos bits que en un bucle, 5× más rápido
+            # waves for ALL vertices at once: janim.math's `sin` and `cos`
+            # accept arrays and give the same bits as a loop, 5× faster
             t = self.t
             a, b, c = 1.7 * U + 1.8 * t, 1.4 * V + 1.3 * t, 2.6 * U - 1.1 * t
             sa, ca, sb, cb, sc, cc = sin(a), cos(a), sin(b), cos(b), sin(c), cos(c)
@@ -67,7 +67,7 @@ class TextMask(Scene):
         sun.set_color("#FFB84D")
         sun.move_to((1.5, 5.5, 1.6))
 
-        # la cámara del mar: inclinada, y meciéndose un poco
+        # the sea camera: tilted and swaying slightly
         cam_sea = CameraFrame()
         cam_sea.reorient(0.0, 62.0)
         cam_sea.set_frame_height(6.0)
@@ -78,7 +78,7 @@ class TextMask(Scene):
 
         cam_sea.add_updater(rock)
 
-        # ── las letras: la RELLENA recorta y no se dibuja; el aro sí ───────
+        # ── the letters: the FILLED one clips and is not drawn; the rim is ───────
         word_mask = Text("JANIM", font="DejaVu Sans", size=2.3)
         if word_mask.get_width() > FRAME_WIDTH - 1.6:
             word_mask.set_width(FRAME_WIDTH - 1.6)
@@ -115,12 +115,12 @@ class TextMask(Scene):
         self.wait(2.5)
         self.play(FadeOut(caption), run_time=0.6)
 
-        # el vuelo: la máscara crece 90× alrededor de la «I» — el ojo entra
-        # por la letra y el mar lo llena todo
+        # the flight: the mask grows 90× around the “I” — the eye enters
+        # through the letter and the sea fills everything
         anchor = word_mask["I"].get_center()
-        # el aro se agranda Y se apaga en el MISMO animate: dos animaciones
-        # sobre un mobject se pisan (cada una escribe el estado entero), una
-        # sola no
+        # the rim grows AND fades in the SAME animate: two animations
+        # on one mobject overwrite each other (each writes the entire state);
+        # a single one does not
         self.play(
             AnimationGroup(
                 word_mask.animate(rate_func=ease_in_cubic).scale(90.0, about_point=anchor),

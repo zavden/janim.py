@@ -184,15 +184,20 @@ adapter).
 bin/janim render examples/demo/03_portals.py -ql
 ```
 
-Each lesson explains itself in its docstring. Some examples, the demos among
-them, are written in Spanish.
+Each lesson explains itself in its docstring. Examples and demos are in
+English; their original Spanish versions are preserved beside them as
+`*.es.py` (for example, `examples/demo/03_portals.es.py`).
 
 ## Documentation
 
 - [`llms.txt`](llms.txt): the whole API in one file.
-- [`docs/cli.md`](docs/cli.md): the command line and the live window (Spanish).
-- [`docs/compositor.md`](docs/compositor.md): layers, masks and effects (Spanish).
-- [`docs/3d.md`](docs/3d.md): surfaces, camera and depth (Spanish).
+- [`docs/cli.md`](docs/cli.md): the command line and the live window ([Spanish](docs/cli.es.md)).
+- [`docs/compositor.md`](docs/compositor.md): layers, masks and effects ([Spanish](docs/compositor.es.md)).
+- [`docs/3d.md`](docs/3d.md): surfaces, camera and depth ([Spanish](docs/3d.es.md)).
+
+English files retain the original filenames. Spanish originals use `.es`
+before the original extension: `.es.md`, `.es.py` or `.es.txt`, including
+the platform notes in `history/2026-10/` and `llms.es.txt`.
 
 ## Known limitations
 

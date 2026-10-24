@@ -115,8 +115,8 @@ class Quadratic(Scene):
             r"x + \frac{b}{2a} = \pm\frac{\sqrt{b^2 - 4ac}}{2a}",
             r"x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}",
         )
-        notes = ("la ecuación general", "dividir entre a y despejar", "completar el cuadrado", "raíz cuadrada a ambos lados", "despejar x")
-        title = Text("La formula cuadratica").set_height(0.42).move_to(3.05 * Vec3(UP))
+        notes = ("the general equation", "divide by a and rearrange", "complete the square", "take the square root of both sides", "solve for x")
+        title = Text("The quadratic formula").set_height(0.42).move_to(3.05 * Vec3(UP))
         title.set_fill("#8899AA", 1.0)
 
         def formula(index):

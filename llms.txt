@@ -172,7 +172,7 @@ thing to break when a label grows. Sizes are scene units; the nominal frame is
   weight, and a weight the font lacks is an ERROR (`FontNotFound`).
 - `Tex(r"x^2 + y^2", size=1.0, color=…, isolate=["x^2"], t2c={…})` is math
   mode through real `latex` + `dvisvgm` → SVG (`MathTex` is the same class);
-  `TexText(r"Sea $x^2$ el área")` is text mode; `LTex`/`LMathTex` take
+  `TexText(r"Let $x^2$ be the area")` is text mode; `LTex`/`LMathTex` take
   `template=TexTemplate()` and its `add_to_preamble(r"\usepackage{…}")`.
   latex and dvisvgm must be on PATH; the SVGs are cached in
   `$JANIM_TEX_CACHE` (default `~/.cache/janim/tex`).
@@ -611,9 +611,10 @@ bin/janim codecs                      # what the CLI's ffmpeg can do
 ## Examples and lessons
 
 - `examples/gallery/*.py` — short showcase scenes; `examples/scenes/*.py` —
-  larger scenes (their on-screen prose is Spanish on purpose: it is the
-  content); `examples/demo/*.py` — demos of the compositor, cameras and
-  physics; `examples/assets/` — the SVGs the scenes load.
+  larger scenes; `examples/demo/*.py` — demos of the compositor, cameras and
+  physics. Comments and on-screen prose are in English; original Spanish
+  versions are preserved as `*.es.py`. `examples/assets/` contains the SVGs
+  the scenes load.
 - `examples/tutorial/` — the four courses, one runnable lesson per file; its
   `README.md` is the index. Every lesson is a `Scene` you can render, preview,
   edit and break; the explanation lives in its docstring. Render one with

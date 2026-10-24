@@ -1,22 +1,22 @@
-"""Demo 05 · RACK FOCUS — profundidad de campo POR CAPA, enfocada a mano
+"""Demo 05 · RACK FOCUS — manually focused depth of field PER LAYER
 
-Cinco tarjetas a cinco profundidades, cada una en su capa con un `Dof`. El
-desenfoque de cada capa se recalcula CADA FRAME a partir de su distancia al
-plano focal de la cámara:
+Five cards at five depths, each in its own layer with a `Dof`. Each
+layer's blur is recalculated EVERY FRAME from its distance to the camera's
+focal plane:
 
     σ = min(aperture · |d − focus|, max_sigma)
 
-y `focus` es un campo de un dataclass mutable: enfocar es escribir un número.
-Eso es exactamente lo que hace un foquista, y es lo que Manim no puede hacer
-porque no tiene capas: todo va a un único framebuffer, y un blur que solo
-afecte a «lo que está lejos» no tiene dónde aplicarse.
+and `focus` is a field of a mutable dataclass: focusing means writing a
+number. That is exactly what a focus puller does, and what Manim cannot
+do because it has no layers: everything goes into a single framebuffer,
+so a blur that only affects “what is far away” has nowhere to apply.
 
-De propina, la cámara se mece un poco de lado: como las tarjetas están a
-distintas z y la cámara es de perspectiva, el PARALAJE sale solo.
+As a bonus, the camera sways sideways slightly: because the cards have
+different z coordinates and the camera uses perspective, PARALLAX comes naturally.
 
-Los cierres del bucle de enfoque se crean con una función (`pull`) para que
-cada uno guarde SU par de profundidades (un `lambda` dentro del `for` de
-Python vería solo el último).
+Closures in the focus loop are created with a function (`pull`) so each
+keeps ITS pair of depths (a `lambda` inside Python's `for` would see only
+the last one).
 
     bin/janim render examples/demo/05_rack_focus.py -ql
 """
@@ -30,7 +30,7 @@ from janim.math import sin
 
 
 def card(formula, color, pos):
-    """Una tarjeta: un panel redondeado con una fórmula, colocado en `pos` (con z)."""
+    """A card: a rounded panel with a formula, placed at `pos` (including z)."""
     panel = RoundedRectangle(
         width=3.7,
         height=1.55,
@@ -58,9 +58,9 @@ class RackFocus(Scene):
             card(r"G_{\mu\nu} = 8 \pi G \, T_{\mu\nu}", "#F0A045", np.array((1.8, 0.8, DEPTHS[3]), dtype=np.float32)),
             card(r"\Delta S \geq 0", "#FF3D8B", np.array((3.6, 1.7, DEPTHS[4]), dtype=np.float32)),
         ]
-        # σ en unidades de escena: 0.23 son ~21 px a 720p, el radio más grande
-        # que el kernel del compositor calcula entero (pedir más solo avisa y
-        # recorta)
+        # σ in scene units: 0.23 is ~21 px at 720p, the largest radius
+        # the compositor kernel computes in full (asking for more only warns
+        # and truncates)
         dofs = [Dof(aperture=0.22, max_sigma=0.23) for _ in cards]
 
         title = Text(
@@ -71,7 +71,7 @@ class RackFocus(Scene):
         title.to_edge(UP, buff=0.3)
         title.fix_in_frame()
 
-        # las capas van de la más lejana a la más cercana: la cercana tapa
+        # layers run from farthest to nearest: the near one covers the others
         layers = [
             Layer(c, effects=[d])
             for c, d in zip(reversed(cards), reversed(dofs))
@@ -84,7 +84,7 @@ class RackFocus(Scene):
             ),
         )
 
-        # el plano focal a la profundidad z: la cámara mira por -z desde `focal`
+        # the focal plane at depth z: the camera looks along -z from `focal`
         focal = self.camera.get_focal_distance()
 
         def set_focus(z):
@@ -93,7 +93,7 @@ class RackFocus(Scene):
 
         set_focus(DEPTHS[0])
 
-        # la cámara se mece: paralaje entre profundidades, gratis
+        # the camera sways: parallax between depths, for free
         pilot = VGroup()
 
         def sway(m, dt):
@@ -103,11 +103,11 @@ class RackFocus(Scene):
         self.add(pilot)
 
         def pull(z0, z1):
-            """El foco de z0 a z1 a lo largo de una animación."""
+            """Focus from z0 to z1 over an animation."""
             return lambda m, a: set_focus(z0 + a * (z1 - z0))
 
         self.wait(1.0)
-        # de la más cercana a la más lejana, parando en cada una
+        # from nearest to farthest, stopping at each
         for k in range(4):
             z0, z1 = DEPTHS[k], DEPTHS[k + 1]
             self.play(
@@ -115,7 +115,7 @@ class RackFocus(Scene):
                 run_time=1.2,
             )
             self.wait(0.8)
-        # y la vuelta de un tirón
+        # and back in one continuous move
         self.play(
             UpdateFromAlphaFunc(cards[0], pull(DEPTHS[4], DEPTHS[0])),
             run_time=2.4,

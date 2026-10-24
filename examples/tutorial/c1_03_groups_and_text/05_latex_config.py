@@ -24,7 +24,7 @@ PREVIEW_T = 1.5
 
 class LatexConfig(Scene):
     def construct(self):
-        title = Text("LaTeX: documentos, medidas y claves", size=0.44, color=GREY_A)
+        title = Text("LaTeX: documents, measurements and keys", size=0.44, color=GREY_A)
         title.to_edge(UP, buff=0.4)
         self.add(title)
 

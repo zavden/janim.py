@@ -1,27 +1,26 @@
-"""Demo 04 · EL ATRACTOR DE LORENZ — un millón de partículas con glow
+"""Demo 04 · THE LORENZ ATTRACTOR — a million glowing particles
 
-El combo que solo esta biblioteca tiene entero: un `GlowDots` de 100³
-partículas cuyo updater MUTA los puntos in place (el idioma de la primitiva:
-`get_points()` entrega el array vivo), sobre una capa `"add"` con un Bloom
-suave. Janim no emborrona el movimiento dentro del bucle de render (`Scene`
-no acepta `motion_blur`), así que el vídeo sale con exposiciones simples.
-Para ver un frame emborronado está `render_frame_motion` (ver
-`examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py`); ojo: avanza
-el estado entre sub-exposiciones, y esta nube integra en su updater.
+The combination only this library offers in full: a `GlowDots` cloud of
+100³ particles whose updater MUTATES points in place (the primitive's
+idiom: `get_points()` returns the live array), on an `"add"` layer with
+a gentle Bloom. Janim does not blur motion inside the render loop
+(`Scene` does not accept `motion_blur`), so video uses single exposures.
+For a blurred frame, use `render_frame_motion` (see
+`examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py`); beware:
+it advances state between sub-exposures, and this cloud integrates in its updater.
 
-Manim no tiene ni nube de puntos con glow por fragmento, ni capas aditivas; y
-un millón de mobjects lo pararía en seco.
+Manim has neither a point cloud with per-fragment glow nor additive layers;
+a million mobjects would bring it to a halt.
 
-El color es la condición inicial: cada partícula guarda para siempre la
-franja z de la que salió (el mapa de 3b1b). Ver las bandas mezclarse ES ver la
-sensibilidad a condiciones iniciales — a los ~8 s el cubo ordenado es mármol
-veteado.
+Color is the initial condition: each particle keeps its original z band
+forever (the 3b1b colormap). Watching the bands mix IS watching sensitivity
+to initial conditions — at ~8 s the ordered cube becomes veined marble.
 
-La misma escena, con otro vuelo de cámara, está en
+The same scene, with a different camera flight, lives in
 `examples/scenes/lorenz_scene.py`.
 
-El bucle por partícula son operaciones de numpy sobre filas float32 contiguas,
-escritas en sitio con `out=`: sin temporales de un millón de elementos.
+The per-particle loop uses numpy operations on contiguous float32 rows,
+written in place with `out=`: no million-element temporaries.
 
     bin/janim render examples/demo/04_lorenz_glow.py -ql
 """
@@ -38,13 +37,13 @@ SCALE04 = np.float32(0.125)
 
 
 def lorenz_step(state, out, dt, t1, t2):
-    """Un paso de Euler explícito de cada partícula, en Float32, de `state` a `out`.
+    """One explicit Euler step per particle, in Float32, from `state` to `out`.
 
-    `state` y `out` son arrays (3, N): una fila contigua por coordenada, así
-    que cada operación recorre 4 MB seguidos en vez de saltar de columna en
-    columna; `t1` y `t2` son dos filas de trabajo que se reutilizan, y todas
-    las operaciones escriben con `out=`. Es la misma aritmética, en el mismo
-    orden, que `x + dt * SIGMA * (y - x)`, etc.: los frames no cambian.
+    `state` and `out` are (3, N) arrays: one contiguous row per coordinate,
+    so each operation traverses 4 MB sequentially instead of jumping
+    between columns; `t1` and `t2` are two reused scratch rows, and every
+    operation writes with `out=`. The arithmetic and its order match
+    `x + dt * SIGMA * (y - x)`, etc.: frames do not change.
     """
     x, y, z = state
     nx, ny, nz = out
@@ -67,8 +66,8 @@ class LorenzGlow(Scene):
     def construct(self):
         self.frame.reorient(-50.0, 65.0, height=9.5)
 
-        # 100³ semillas en un cubo pequeño cerca del atractor (i el más
-        # externo, k el más interno)
+        # 100³ seeds in a small cube near the attractor (i outermost,
+        # k innermost)
         side = 100
         i, j, k = np.meshgrid(
             np.arange(1, side + 1),
@@ -87,15 +86,15 @@ class LorenzGlow(Scene):
             glow_factor=2.0,
         )
         dc.set_opacity(0.13)
-        # el color ES la condición inicial: la franja z de origen, para siempre
+        # color IS the initial condition: the original z band, forever
         band = color_gradient(["#1C758A", "#83C167", "#FFFF00", "#FC6255"], 256)
         zs = raw[:, 2]
         zlo, zhi = zs.min(), zs.max()
         index = np.rint(np.float32(255) * (zs - zlo) / (zhi - zlo)).astype(np.int64)
         dc.set_colors(band[index], opacity=0.13)
 
-        # el estado vive por filas (3, N): x, y, z contiguas; dos buffers que se
-        # alternan en cada subpaso, dos filas de trabajo y una (3, N) para proyectar
+        # state lives in (3, N) rows: contiguous x, y, z; two buffers swapped
+        # each substep, two scratch rows and a (3, N) array for projection
         state = [np.ascontiguousarray(raw.T), np.empty((3, len(raw)), dtype=np.float32)]
         t1 = np.empty(len(raw), dtype=np.float32)
         t2 = np.empty(len(raw), dtype=np.float32)
@@ -105,7 +104,7 @@ class LorenzGlow(Scene):
         def project(points):
             np.subtract(state[0], center, out=projected)
             np.multiply(SCALE04, projected, out=projected)
-            points[:] = projected.T                 # SCALE * (raw - CENTER), por filas
+            points[:] = projected.T                 # SCALE * (raw - CENTER), row-wise
 
         project(dc.get_points())
 
@@ -113,7 +112,7 @@ class LorenzGlow(Scene):
             if dt <= 0:
                 return
             h = np.float32(dt) / np.float32(4)
-            for _ in range(4):                      # 4 subpasos: Lorenz pide dt corto
+            for _ in range(4):                      # 4 substeps: Lorenz needs a small dt
                 lorenz_step(state[0], state[1], h, t1, t2)
                 state[0], state[1] = state[1], state[0]
             project(m.get_points())
@@ -135,12 +134,12 @@ class LorenzGlow(Scene):
             ),
         )
 
-        self.wait(1.0)                              # el cubo ordenado, un instante
+        self.wait(1.0)                              # the ordered cube, for a moment
         self.play(self.frame.animate.reorient(30.0, 55.0), run_time=15.0)
         self.wait(2.0)
 
 
 if __name__ == "__main__":
     here = Path(__file__).resolve()
-    # El vídeo sale sin motion blur (ver el docstring).
+    # The video has no motion blur (see the docstring).
     LorenzGlow(output=str(here.with_suffix(".mp4")), fps=30, resolution=(1280, 720)).render()

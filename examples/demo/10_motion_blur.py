@@ -1,26 +1,25 @@
-"""Demo 10 · MOTION BLUR — una rueda, cuatro órbitas y un barrido de cámara
+"""Demo 10 · MOTION BLUR — a wheel, four orbits and a camera sweep
 
-Esta escena se escribió para un motion blur que no fuese un difuminado
-direccional pintado sobre la imagen: avanzar el ESTADO de la escena entre
-sub-exposiciones y promediar (en luz lineal). Así cada objeto se emborrona a
-lo largo de SU trayectoria —
-rectas, arcos, giros, movimiento de cámara— y con `shutter = 0.5` (el
-obturador de 180° del cine) los radios de una rueda rápida se funden en un
-disco, como en una cámara de verdad.
+This scene was written for motion blur that is not a directional smear
+painted over the image: advance the scene's STATE between sub-exposures
+and average (in linear light). Each object then blurs along ITS trajectory —
+straight lines, arcs, rotations, camera movement — and with `shutter = 0.5`
+(cinema's 180° shutter), a fast wheel's spokes merge into a disc,
+as in a real camera.
 
-Janim no hace ese motion blur dentro del bucle de render: `Scene` no tiene
-un kwarg `motion_blur` (y el CLI rechaza `--motion-blur` por su nombre), así
-que el vídeo sale con exposiciones simples. Lo que hay es la foto fija
-`render_frame_motion(MotionBlur, t, n=8, shutter=0.5)` (ver
-`examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py`), con su
-límite: coge el frame que contiene cada sub-exposición, y como la ventana del
-obturador (`shutter / fps`) es más corta que un frame, promedia como mucho DOS
-frames distintos — dos copias, no una estela (ver el README de esta carpeta).
+Janim does not apply that motion blur inside the render loop: `Scene`
+has no `motion_blur` kwarg (and the CLI rejects `--motion-blur` by name),
+so video uses single exposures. What exists is the still image
+`render_frame_motion(MotionBlur, t, n=8, shutter=0.5)` (see
+`examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py`), with its
+limitation: it takes the frame containing each sub-exposure, and because
+the shutter window (`shutter / fps`) is shorter than a frame, it averages
+at most TWO distinct frames — two copies, not a trail (see this folder's README).
 
-Tres cosas en un mismo plano: un título que entra a látigo, una rueda que
-acelera, cuatro partículas en órbita, y al final un barrido de cámara. El
-rótulo de abajo describe ese motion blur por sub-exposiciones, aunque el
-vídeo no lo aplique. Manim no tiene motion blur.
+Three things in one shot: a title whipping in, an accelerating wheel,
+four orbiting particles, and finally a camera sweep. The bottom caption
+describes that sub-exposure motion blur, although the video does not
+apply it. Manim has no motion blur.
 
     bin/janim render examples/demo/10_motion_blur.py -ql
 """
@@ -36,9 +35,9 @@ from janim.math import cos, sin
 class MotionBlur(Scene):
     def construct(self):
         title = Text("motion blur", size=0.95, color=WHITE)
-        title.move_to((-10.0, 2.4, 0))       # fuera de cuadro, a la izquierda
+        title.move_to((-10.0, 2.4, 0))       # off screen, to the left
 
-        # una rueda con radios: al girar deprisa, los radios se funden en un disco
+        # a spoked wheel: when spinning fast, its spokes merge into a disc
         wheel = VGroup()
         for k in range(6):
             spoke = Rectangle(width=3.0, height=0.16)
@@ -56,7 +55,7 @@ class MotionBlur(Scene):
         wheel.move_to(wheel_center)
         hub.move_to(wheel_center)
 
-        # el giro es función CERRADA del tiempo: acelera 3 s y luego va a 3 rev/s
+        # rotation is a CLOSED-FORM function of time: accelerates for 3 s, then runs at 3 rev/s
         omega_max, t_acc = 3.0 * TAU, 3.0
 
         def angle(t):
@@ -71,7 +70,7 @@ class MotionBlur(Scene):
 
         wheel.add_updater(spin)
 
-        # cuatro partículas en órbita rápida: cada una sigue su propio arco
+        # four particles in fast orbits: each follows its own arc
         orbit_center = np.array((3.4, -0.9, 0), dtype=np.float32)
         ring = Circle(radius=1.8)
         ring.move_to(orbit_center)
@@ -99,14 +98,14 @@ class MotionBlur(Scene):
 
         self.add(wheel, hub, ring, orbiters, title, caption)
 
-        # 1 · el título entra a látigo
+        # 1 · the title whips in
         self.play(
             title.animate(rate_func=ease_out_quint).move_to((0, 2.4, 0)),
             run_time=0.6,
         )
-        # 2 · la rueda acelera y las partículas orbitan
+        # 2 · the wheel accelerates and the particles orbit
         self.wait(5.0)
-        # 3 · barrido de cámara: todo se mueve a la vez, incluido lo quieto
+        # 3 · camera sweep: everything moves at once, including stationary objects
         self.play(
             self.frame.animate.move_to((3.2, -0.6, 0)).scale_frame(0.6),
             run_time=0.7,
@@ -121,5 +120,5 @@ class MotionBlur(Scene):
 
 if __name__ == "__main__":
     here = Path(__file__).resolve()
-    # El vídeo sale sin motion blur (ver el docstring).
+    # The video has no motion blur (see the docstring).
     MotionBlur(output=str(here.with_suffix(".mp4")), fps=30, resolution=(1280, 720)).render()

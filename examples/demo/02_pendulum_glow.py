@@ -1,31 +1,30 @@
-"""Demo 02 · EL PÉNDULO CON GLOW — física dentro de un updater, una estela con
-Bloom en una capa aditiva y un foco que es una MÁSCARA ANIMADA
+"""Demo 02 · THE GLOWING PENDULUM — physics inside an updater, a trail with
+Bloom in an additive layer and a spotlight that is an ANIMATED MASK
 
-Un doble péndulo integrado con Tsit5 DENTRO del updater de la varilla: el
-integrador vive fuera, el updater le pide `step(integ, dt, True)` y lee el
-estado. El integrador es `janim.ode` (un Tsit5). Tres cosas que Manim no
-tiene:
+A double pendulum integrated with Tsit5 INSIDE the rod's updater: the
+integrator lives outside, the updater calls `step(integ, dt, True)` and
+reads the state. The integrator is `janim.ode` (a Tsit5). Three things
+Manim does not have:
 
-  · la estela va en una capa `blend="add"` con `Bloom`: la luz SUMA en vez de
-    tapar, y el halo sale del propio color del trazo. Las muestras se unen
-    con `set_points_smoothly` (el `make_smooth` de GL): una curva por los
-    mismos puntos, sin esquinas;
-  · la masa lleva detrás un `GlowDot`: un halo REDONDO por fragmento
-    (`pow(1-r, 2)`), que es lo que un Bloom no puede dar a un punto — el
-    nivel más ancho de su pirámide chocaba con el tope del kernel (±63 px) y
-    el halo salía CUADRADO;
-  · el foco que sigue a la punta es una máscara con `feather`: recorta la
-    rejilla encendida, y como es un mobject normal se mueve con un updater;
-  · debajo queda la rejilla tenue, siempre visible — la misma geometría dos
-    veces, con dos estilos, en dos capas.
+  · the trail lives in a `blend="add"` layer with `Bloom`: light ADDS
+    instead of covering, and the halo comes from the stroke's own color.
+    Samples are joined with `set_points_smoothly` (GL's `make_smooth`):
+    a curve through the same points, with no corners;
+  · the bob has a `GlowDot` behind it: a ROUND per-fragment halo
+    (`pow(1-r, 2)`), which Bloom cannot give a point — the widest level
+    of its pyramid hit the kernel limit (±63 px) and the halo was SQUARE;
+  · the spotlight following the tip is a mask with `feather`: it clips
+    the lit grid, and as an ordinary mobject it moves with an updater;
+  · the dim grid stays underneath, always visible — the same geometry
+    twice, with two styles, in two layers.
 
-Es el acto 2 de `examples/scenes/field_scene.py:FieldAndChaos`, sin las
-líneas de campo de fondo y con la rejilla completa.
+This is act 2 of `examples/scenes/field_scene.py:FieldAndChaos`, without
+the background field lines and with the complete grid.
 
-El estado mutable de los updaters son listas de un elemento; el seno y el
-coseno vienen de `janim.math` y el rango de la rejilla
-(`-7.2` a `7.2` de `0.8` en `0.8`) de `janim.math.step_range`, para
-que las muestras sean siempre las mismas.
+Mutable updater state is held in single-element lists; sine and cosine
+come from `janim.math`, and the grid range
+(`-7.2` to `7.2` in steps of `0.8`) from `janim.math.step_range`, so the
+samples are always the same.
 
     bin/janim render examples/demo/02_pendulum_glow.py -ql
 """
@@ -56,7 +55,7 @@ def double_pendulum(du, u, p, t):
 
 
 def grid(color, width):
-    """La rejilla de fondo, con el color y el grosor que se le pidan."""
+    """The background grid, with the requested color and width."""
     g = VGroup()
     for x in step_range(-7.2, 7.2, 0.8):
         line = Line((x, -4.2, 0), (x, 4.2, 0))
@@ -79,13 +78,13 @@ class PendulumGlow(Scene):
             stroke_opacity=0,
             stroke_width=0,
         )
-        grid_dim = grid("#182338", 1.2)      # la rejilla tenue, siempre visible
-        grid_lit = grid("#4A6FA8", 1.8)      # la rejilla encendida bajo el foco
+        grid_dim = grid("#182338", 1.2)      # the dim grid, always visible
+        grid_lit = grid("#4A6FA8", 1.8)      # the lit grid under the spotlight
 
-        # el foco: un círculo relleno que NO se dibuja — recorta la rejilla encendida
+        # the spotlight: a filled circle that is NOT drawn — it clips the lit grid
         spotlight = Circle(radius=1.45, fill_opacity=1.0)
 
-        # ── el péndulo ───────────────────────────────────────────────────
+        # ── the pendulum ───────────────────────────────────────────────────
         pivot = np.array((0, 0.4, 0), dtype=np.float32)
         L = 1.25
         rod = VMobject()
@@ -98,8 +97,8 @@ class PendulumGlow(Scene):
         bob2.set_stroke(opacity=0)
         trail = VMobject()
         trail.set_stroke("#58C4DD", width=2.6, opacity=0.85)
-        # el halo de la masa: un GlowDot nace con su estilo final (lo mueve un
-        # updater, y un updater no re-estampa la opacidad de un DotCloud)
+        # the bob's halo: a GlowDot starts with its final style (an updater
+        # moves it, and an updater does not reapply a DotCloud's opacity)
         halo = GlowDot(
             ORIGIN,
             color="#FFD25E",
@@ -121,7 +120,7 @@ class PendulumGlow(Scene):
             p2 = p1 + np.array((L * sin(u[1]), -L * cos(u[1]), 0), dtype=np.float32)
             return p1, p2
 
-        # el estado inicial ya dibujado: nada aparece en el origen y salta después
+        # the initial state already drawn: nothing appears at the origin and then jumps
         p1, p2 = positions(u0)
         rod.set_points_as_corners([pivot, p1, p2])
         bob1.move_to(p1)
@@ -146,7 +145,7 @@ class PendulumGlow(Scene):
             samples.append(p2)
             if len(samples) > 300:
                 del samples[0]
-            # esquinas + make_smooth en una llamada: la misma curva
+            # corners + make_smooth in one call: the same curve
             if len(samples) > 1:
                 trail.set_points_smoothly(list(samples))
 
@@ -158,7 +157,7 @@ class PendulumGlow(Scene):
 
         spotlight.add_updater(follow)
 
-        # ── el título ────────────────────────────────────────────────────
+        # ── the title ────────────────────────────────────────────────────
         def make_title(s, color):
             t = Tex(s, color=color, size=0.95)
             t.move_to(3.3 * UP)
@@ -171,9 +170,9 @@ class PendulumGlow(Scene):
                 Layer(background, grid_dim),
                 crop(grid_lit, inside=spotlight, feather=0.2),
                 Layer(rod, bob1),
-                # σ = 0.055 u son 5 px a 720p: los tres niveles de la pirámide
-                # (σ, 2σ, 4σ) caben enteros en el kernel, así que el halo es
-                # gaussiano de verdad
+                # σ = 0.055 units is 5 px at 720p: all three pyramid levels
+                # (σ, 2σ, 4σ) fit entirely in the kernel, so the halo is
+                # truly Gaussian
                 Layer(
                     trail,
                     halo,
@@ -185,8 +184,8 @@ class PendulumGlow(Scene):
             ),
         )
 
-        # «aparecer» = Transform hacia una copia con la opacidad final (FadeIn
-        # funde hacia el estado ACTUAL, que aquí es 0)
+        # “appear” = Transform toward a copy with the final opacity (FadeIn
+        # fades toward the CURRENT state, which here is 0)
         def appear(m, op):
             c = m.copy()
             c.set_fill(opacity=op)
@@ -209,8 +208,8 @@ class PendulumGlow(Scene):
         )
         self.wait(10.0)
 
-        # congelar ANTES del fundido: si el updater sigue, re-estampa el estilo
-        # cada frame y el fundido no se ve
+        # freeze BEFORE fading: if the updater continues, it reapplies the style
+        # every frame and the fade is invisible
         running[0] = False
         self.play(
             AnimationGroup(

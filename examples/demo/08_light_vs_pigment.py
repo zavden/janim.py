@@ -1,23 +1,24 @@
-"""Demo 08 · LA LUZ SUMA, EL PIGMENTO MULTIPLICA — modos de fusión por capa
+"""Demo 08 · LIGHT ADDS, PIGMENT MULTIPLIES — per-layer blend modes
 
-A la izquierda, tres discos de luz pura (R, G, B), cada uno en su capa con
-`blend="add"`: donde se solapan dos sale amarillo, cian o magenta, y donde se
-solapan los tres, BLANCO. A la derecha, tres tintas (C, M, Y) sobre un papel,
-cada una en su capa con `blend="multiply"`: los solapes dan rojo, verde y
-azul, y los tres juntos, NEGRO.
+On the left, three pure-light discs (R, G, B), each in its own layer with
+`blend="add"`: two overlapping discs produce yellow, cyan or magenta,
+and all three produce WHITE. On the right, three inks (C, M, Y) on paper,
+each in its own layer with `blend="multiply"`: overlaps produce red,
+green and blue, and all three together produce BLACK.
 
-Cada disco va en SU capa a propósito: dentro de una misma capa los mobjects se
-dibujan uno sobre otro (tapan), y el modo de fusión actúa entre la capa entera
-y lo que tiene debajo. Los tres de luz van dentro de una precomposición
-(`Layer(Composition(...))`) para ponerle el Bloom al conjunto y no al papel.
+Each disc deliberately has ITS OWN layer: within a layer, mobjects are
+drawn over one another (covering), and the blend mode acts between the
+whole layer and what is below it. The three light discs go inside a
+precomposition (`Layer(Composition(...))`) to apply Bloom to the group
+without affecting the paper.
 
-Y el compositor compone en LUZ LINEAL: rojo + verde + azul da blanco
-de verdad, no el gris sucio de sumar bytes sRGB. Manim no tiene modos de
-fusión: un disco con opacidad 0.5 sobre otro es una mezcla alfa, que ni suma
-ni multiplica.
+And the compositor works in LINEAR LIGHT: red + green + blue really makes
+white, not the muddy gray of adding sRGB bytes. Manim has no blend modes:
+one disc with opacity 0.5 over another is alpha blending, which neither
+adds nor multiplies.
 
-El modo se escribe `blend="add"` (una cadena), y el `enumerate` empieza en 1
-(`start=1`) porque `k` entra en el ángulo de cada disco.
+The mode is written `blend="add"` (a string), and `enumerate` starts at 1
+(`start=1`) because `k` enters each disc's angle.
 
     bin/janim render examples/demo/08_light_vs_pigment.py -ql
 """
@@ -31,7 +32,7 @@ from janim.math import cos, sin
 
 
 def disc(color, pos):
-    """Un disco de color plano, sin borde, en `pos`."""
+    """A flat-colored disc, without a border, at `pos`."""
     c = Circle(radius=1.15, fill_opacity=1.0)
     c.set_fill(color, opacity=1.0)
     c.set_stroke(opacity=0)
@@ -40,7 +41,7 @@ def disc(color, pos):
 
 
 def spread(center, k, r):
-    """El k-ésimo de tres puntos a distancia r del centro, a 120°."""
+    """The k-th of three points at distance r from the center, spaced 120° apart."""
     return center + np.array(
         (
             r * cos(TAU / 4 + k * TAU / 3),
@@ -107,8 +108,8 @@ class LightVsPigment(Scene):
             ),
         )
 
-        # los seis giran como un todo mientras están juntos: la mezcla no
-        # depende de quién está encima, porque no hay «encima»
+        # all six rotate together while grouped: the blend does not depend
+        # on which is on top, because there is no “on top”
         spinning = [False]
 
         def spin(m, dt):

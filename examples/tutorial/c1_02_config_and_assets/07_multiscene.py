@@ -53,7 +53,7 @@ def wipe(scene):
 # ── scene 1 · `Intro` — render it alone with  <file>:Intro ──────────────
 class Intro(Scene):
     def construct(self):
-        title = Text("varias escenas, un fichero", size=0.62)
+        title = Text("several scenes, one file", size=0.62)
         title.to_edge(UP, buff=0.7)
         rule = Line((-3.4, 0, 0), (3.4, 0, 0))
         rule.set_stroke(GREY_B, width=3.0)
@@ -62,7 +62,7 @@ class Intro(Scene):
         self.play(Write(title), run_time=2)
         self.play(ShowCreation(rule), run_time=0.6)
 
-        tag = Text("esta es «intro»", size=0.45, color=YELLOW)
+        tag = Text("this is “intro”", size=0.45, color=YELLOW)
         tag.next_to(rule, DOWN, buff=0.6)
         self.play(FadeIn(tag, shift=0.3 * UP), run_time=0.8)
         self.wait(0.4)

@@ -15,10 +15,10 @@ def design_shapes():
 
 class DesignLayers(Scene):
     def construct(self):
-        title = Text("Efectos POR CAPA: lo que el diseño de Manim impide", size=0.5, color=GREY_A)
+        title = Text("PER-LAYER effects: what Manim's design prevents", size=0.5, color=GREY_A)
         title.to_edge(UP, buff=0.3)
-        left_label = Text("un solo framebuffer, orden z", size=0.3, color=GREY_B)
-        right_label = Text("una capa por grupo, con efectos", size=0.3, color=GREY_B)
+        left_label = Text("one framebuffer, z order", size=0.3, color=GREY_B)
+        right_label = Text("one layer per group, with effects", size=0.3, color=GREY_B)
         flat = VGroup(*design_shapes()).shift(3.4 * Vec3(LEFT) + 0.3 * Vec3(DOWN))
         back, middle, front = design_shapes()
         for mob in (back, middle, front):
@@ -45,7 +45,7 @@ class DesignLayers(Scene):
 
 class DesignMap(Scene):
     def construct(self):
-        title = Text("El mapa de coordenadas: derivado vs cacheado", size=0.5, color=GREY_A)
+        title = Text("The coordinate map: derived vs cached", size=0.5, color=GREY_A)
         self.add(title.to_edge(UP, buff=0.3))
         def plane():
             return NumberPlane(
@@ -64,8 +64,8 @@ class DesignMap(Scene):
         self.add(left, right, live, cached)
         live.add_updater(lambda mob: mob.move_to(left.c2p(1, 1)))
         cached.move_to(right.c2p(1, 1))
-        left_label = Text("c2p(1,1) preguntado cada frame", size=0.28, color=YELLOW).move_to((-3.3, -3, 0))
-        right_label = Text("c2p(1,1) calculado una vez", size=0.28, color=RED).move_to((3.3, -3, 0))
+        left_label = Text("c2p(1,1) queried every frame", size=0.28, color=YELLOW).move_to((-3.3, -3, 0))
+        right_label = Text("c2p(1,1) calculated once", size=0.28, color=RED).move_to((3.3, -3, 0))
         self.add(left_label, right_label)
         self.wait(0.5)
         self.play(AnimationGroup(left.animate.scale(0.62), right.animate.scale(0.62)), run_time=1.2)
@@ -124,7 +124,7 @@ class Thermometer(Mobject):
 
 class DesignContract(Scene):
     def construct(self):
-        title = Text("El contrato de interpolación: 4 líneas y ya se anima", size=0.48, color=GREY_A)
+        title = Text("The interpolation contract: 4 lines to animate", size=0.48, color=GREY_A)
         title.to_edge(UP, buff=0.3)
         thermometer = Thermometer(level=0.15).shift(3.6 * Vec3(LEFT) + 0.3 * Vec3(DOWN))
         reading = DecimalNumber(15, num_decimal_places=0, size=0.9, color=RED)
@@ -134,7 +134,7 @@ class DesignContract(Scene):
         ball.move_to((1.6, -0.4, 0))
         code = Text("is_interpolable · copy · interpolate · become", size=0.34, color=GREY_B)
         code.move_to((0, -2.9, 0))
-        note = Text("Transform no menciona este tipo en ninguna parte", size=0.3, color=GREY_C)
+        note = Text("Transform never mentions this type", size=0.3, color=GREY_C)
         note.next_to(code, DOWN, buff=0.25)
         self.add(title, thermometer, reading, ball, code, note)
         self.wait(0.4)

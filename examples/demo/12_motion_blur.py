@@ -1,18 +1,17 @@
-"""Demo 12 · MOTION BLUR — «Welcome to JANIM», tres palabras que entran a látigo
+"""Demo 12 · MOTION BLUR — “Welcome to JANIM”, three words whipping in
 
-Una variante de la demo 10: tres palabras que entran desde la izquierda una
-tras otra con `ease_out_quint`, pensadas para un motion blur que avanza el
-ESTADO entre sub-exposiciones y promedia en luz lineal, de modo que cada
-palabra se emborrona a lo largo de su trayectoria real. Janim no hace ese
-motion blur dentro del bucle de render (`Scene` no tiene un kwarg
-`motion_blur`), así que el vídeo sale con exposiciones simples. La foto fija
-que hay es `render_frame_motion` (ver
-`examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py` y el README de
-esta carpeta: promedia como mucho dos frames distintos).
+A variation on demo 10: three words enter from the left one after another
+with `ease_out_quint`, intended for motion blur that advances STATE
+between sub-exposures and averages in linear light, so each word blurs
+along its actual trajectory. Janim does not apply that motion blur inside
+the render loop (`Scene` has no `motion_blur` kwarg), so video uses single
+exposures. The available still-image function is `render_frame_motion`
+(see `examples/tutorial/c3_05_motion_blur/04_render_frame_motion.py` and
+this folder's README: it averages at most two distinct frames).
 
-«JANIM» va en la tipografía Fredoka Expanded, que tiene que estar instalada
-(fontconfig la encuentra por su nombre de familia); el rótulo de abajo
-describe el motion blur por sub-exposiciones, aunque el vídeo no lo aplique.
+“JANIM” uses the Fredoka Expanded typeface, which must be installed
+(fontconfig finds it by its family name); the bottom caption describes
+sub-exposure motion blur, although the video does not apply it.
 
     bin/janim render examples/demo/12_motion_blur.py -ql
 """
@@ -62,5 +61,5 @@ class MotionBlurWelcome(Scene):
 
 if __name__ == "__main__":
     here = Path(__file__).resolve()
-    # El vídeo sale sin motion blur (ver el docstring).
+    # The video has no motion blur (see the docstring).
     MotionBlurWelcome(output=str(here.with_suffix(".mp4")), fps=30, resolution=(1280, 720)).render()

@@ -35,7 +35,7 @@ def acid_color(index):
 
 class TuxBigBang(Scene):
     def construct(self):
-        title = Text("Tux · big bang por hijos", size=0.45, color=GREY_A).to_edge(UP, buff=0.3)
+        title = Text("Tux · big bang by child", size=0.45, color=GREY_A).to_edge(UP, buff=0.3)
         tux = SVGMobject(TUX, height=4.6).shift(0.2 * Vec3(DOWN))
         original = tux.copy()
         self.add(title, tux)
@@ -63,7 +63,7 @@ class TuxBigBang(Scene):
 
 class TuxStyleRows(Scene):
     def construct(self):
-        title = Text("Tux · cirugía de filas de estilo en vivo", size=0.45, color=GREY_A).to_edge(UP, buff=0.3)
+        title = Text("Tux · live style-row editing", size=0.45, color=GREY_A).to_edge(UP, buff=0.3)
         tux = SVGMobject(TUX, height=5).shift(0.2 * Vec3(DOWN))
         pristine = tux.copy()
         self.add(title, tux)
@@ -91,7 +91,7 @@ class TuxStyleRows(Scene):
 
 class TuxLayers(Scene):
     def construct(self):
-        title = Text("Tux · capas: glow aditivo + blur animado + zoom", size=0.42, color=GREY_A).to_edge(UP, buff=0.3)
+        title = Text("Tux · layers: additive glow + animated blur + zoom", size=0.42, color=GREY_A).to_edge(UP, buff=0.3)
         front = SVGMobject(TUX, height=4.2).shift(0.3 * Vec3(DOWN))
         back = SVGMobject(TUX, height=7.8).shift(0.3 * Vec3(DOWN))
         halo = Blur(0.22)

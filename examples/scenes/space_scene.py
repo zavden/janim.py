@@ -11,7 +11,7 @@ X, Y, NU, NV = 6.5, 4.6, 61, 41
 class SpaceScene(Scene):
     def construct(self):
         self.camera.reorient(15, 68)
-        olas = PlaneXY(
+        waves = PlaneXY(
             x_range=(-X, X),
             y_range=(-Y, Y),
             resolution=(NU, NV),
@@ -39,17 +39,17 @@ class SpaceScene(Scene):
             nudged[:, 0], nudged[:, 1], nudged[:, 2] = U - dzx * inv, V - dzy * inv, z + inv
             m.note_changed_data()
 
-        olas.add_updater(wave)
-        esf = Sphere(radius=1.15, color="#58C4DD").shift((-1.9, 0, 0.35))
-        tor = Torus(r1=1.5, r2=0.42, color="#F0A045").shift((1.9, 0, -0.1))
-        anillos = VGroup()
+        waves.add_updater(wave)
+        sphere = Sphere(radius=1.15, color="#58C4DD").shift((-1.9, 0, 0.35))
+        torus = Torus(r1=1.5, r2=0.42, color="#F0A045").shift((1.9, 0, -0.1))
+        rings = VGroup()
         for r, col, tilt in ((3.0, "#FFD25E", 0.35), (3.55, "#DD58C4", -0.25)):
             a = Circle(radius=r)
             a.set_stroke(col, width=4.0)
             a.rotate(tilt, axis=RIGHT)
             a.shift((0, 0, 0.25))
             a.apply_depth_test()
-            anillos.add(a)
+            rings.add(a)
 
         def spin(m, dt):
             if not dt > 0:
@@ -57,9 +57,9 @@ class SpaceScene(Scene):
             for a in m.submobjects:
                 a.rotate(0.25 * dt, axis=OUT, about_point=(0, 0, 0.25))
 
-        anillos.add_updater(spin)
+        rings.add_updater(spin)
         camera_clock = [0.0]
-        piloto = VGroup()
+        camera_pilot = VGroup()
 
         def pilot(m, dt):
             if not dt > 0:
@@ -76,7 +76,7 @@ class SpaceScene(Scene):
             if 46 <= t < 56:
                 self.camera.scale_frame(1 + 0.082 * dt)
 
-        piloto.add_updater(pilot)
+        camera_pilot.add_updater(pilot)
         hud = Tex(r"S^2 \times T^2 \subset \mathbb{R}^3", color="#FFFFFF", size=0.85)
         hud.fix_in_frame()
         hud.move_to((-3.9, 3.05, 0))
@@ -84,12 +84,12 @@ class SpaceScene(Scene):
         def make_hud(source, color):
             return Tex(source, color=color, size=0.85).move_to((-3.9, 3.05, 0))
 
-        marca = Text("Janim")
-        marca.set_height(0.32)
-        marca.set_fill("#44536A", opacity=0.85)
-        marca.fix_in_frame()
-        marca.move_to((5.5, -3.25, 0))
-        self.add(olas, esf, tor, anillos, marca, piloto)
+        logo = Text("Janim")
+        logo.set_height(0.32)
+        logo.set_fill("#44536A", opacity=0.85)
+        logo.fix_in_frame()
+        logo.move_to((5.5, -3.25, 0))
+        self.add(waves, sphere, torus, rings, logo, camera_pilot)
         self.play(FadeIn(hud, shift=0.25 * Vec3(DOWN)), run_time=1.2)
         self.wait(12.8)
         self.play(Transform(hud, make_hud(r"A_{S^2} = 4\pi r^2", "#58C4DD")), run_time=1.2)
@@ -98,5 +98,5 @@ class SpaceScene(Scene):
         self.wait(12.8)
         self.play(Transform(hud, make_hud(r"\chi(T^2) = 0", "#FFD25E")), run_time=1.2)
         self.wait(10.6)
-        self.play(AnimationGroup(FadeOut(hud), FadeOut(marca)), run_time=1.6)
+        self.play(AnimationGroup(FadeOut(hud), FadeOut(logo)), run_time=1.6)
         self.wait(4.6)

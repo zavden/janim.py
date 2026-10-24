@@ -1,0 +1,644 @@
+# Janim
+
+> A mathematical animation engine with Manim's API — `class X(Scene)`,
+> `self.play`, `Circle`, `Transform`, `m.animate` — on its own WebGPU
+> renderer, with deterministic frames: the same scene gives the same pixels on
+> every run on the same route (RADV or lavapipe on Linux, Metal on macOS, DX12
+> or WARP on Windows).
+> Formulas through real LaTeX, a layer compositor with masks and seventeen
+> effects, 3D with a quaternion camera, a Tsit5 integrator and forward-mode
+> duals, a CLI with a live window, and a render farm across processes. Pure
+> Python on wgpu-native; no daemon.
+
+For an AI agent: write Manim-style Python (see the template), render ONE frame
+with `render_frame` or `bin/janim frame`, and LOOK at the PNG before calling
+anything done. A frame that renders is not a frame that is right.
+
+## Minimal scene template
+
+```python
+from janim import *
+
+
+class Demo(Scene):
+    def construct(self):
+        c = Circle(radius=1.0)
+        c.set_fill(YELLOW, opacity=1.0)
+        self.play(FadeIn(c, shift=0.5 * UP), run_time=0.5)
+        self.play(Transform(c, Square()), run_time=1.0)
+        self.wait(0.5)
+
+
+# a full mp4 (a Scene built by hand defaults to 1920x1080 at 60 fps):
+Demo(output="output.mp4", fps=30, resolution=(1280, 720)).render()
+# a single frame (no video), e.g. for inspection:
+render_frame(Demo, 0.75, fps=30, resolution=(854, 480), png="f.png")
+```
+
+The scene is a CLASS, and that is a contract: the CLI, the farm and the live
+window look up the `Scene` subclass in your file (the
+only one, or the one you name as `file.py:Demo`) and call its `construct`.
+
+## The agent loop
+
+- `render_frame(Demo, t, png=...)` → RGB `uint8` array `(height, width, 3)`,
+  headless, deterministic. Frame K (from 1) is the instant `t = (K − ½)/fps`;
+  the αs an animation sees are the MIDPOINTS `(k + ½)/n`, never 0 or 1.
+  `render_frame([mob1, mob2], png=...)` draws a static list, no scene.
+- `animation_map(Demo)` → `(act start frames, total frames)`,
+  `count_frames(Demo)` → `(frames, animations)`: the scene SIMULATED without
+  drawing, no GPU. Pick the frames worth looking at instead of guessing.
+- `describe(Demo, t)` → the state at `t` as text, taken where `render_frame`
+  takes its pixels (it simulates AND draws, so it opens the device);
+  `describe(self)` inside `construct` needs none.
+- `render_frame_motion(Demo, t, n=8, shutter=0.5)` → the motion-blurred still:
+  n sub-exposures averaged in linear light.
+- `bin/janim frame scene.py K out.png` re-simulates from t = 0 on every call
+  (no daemon, no frame cache): a late frame costs its whole prefix. For many
+  frames of a long scene, render the mp4 once and cut them out with
+  `ffmpeg -i out.mp4 -vf "select='eq(n,K)'" -vframes 1 fK.png`.
+- `JANIM_HEADLESS=1` picks the CPU adapter (lavapipe, slug `llvmpipe`, on
+  Linux; WARP on Windows; macOS has none); unset, the native GPU (Vulkan on
+  Linux, Metal on macOS, DX12 on Windows); `JANIM_ADAPTER=<substring>` picks
+  by name and wins.
+  `gpu_info()` says which one ran. Rendering to a file opens no window, and
+  `import janim` opens no device at all.
+
+## Mobjects and style
+
+- Shapes: `Circle`, `Square`, `Rectangle`, `RoundedRectangle`, `Ellipse`,
+  `Polygon`, `RegularPolygon`, `Triangle`, `Star`, `Arc`, `ArcBetweenPoints`,
+  `Annulus`, `Sector`, `AnnularSector`, `Elbow`, `Polygram`,
+  `RegularPolygram`, `ConvexHull`, `Polyline`, `CubicBezier`, `ArcPolygon`,
+  `Cutout(shape, *holes)` (real holes, wound the other way), `VectorizedPoint`.
+- Lines and points: `Line(a, b, buff=0, path_arc=0)`, `DashedLine`,
+  `Arrow(a, b, buff=0.25, thickness=3.0)`, `Vector`, `DoubleArrow`,
+  `CurvedArrow`, `StrokeArrow`, `TangentLine`, `Dot(point, radius=0.08)`,
+  `SmallDot`, `LabeledDot`, `DimensionLine`. The ends of a `Line` or an
+  `Arrow` may be MOBJECTS: their facing borders are used.
+- Two colour traps, both ManimGL's: `Dot(p, color=BLUE)` stays white — write
+  `Dot(p, fill_color=BLUE)` or `.set_fill(BLUE)`; an `Arrow` is drawn by its
+  FILL, so its `color=` paints a zero-width stroke — use `fill_color=`.
+- Annotation: `Brace(m, DOWN, buff=0.2)` (a native path, no LaTeX),
+  `BraceLabel(m, "text")`, `SurroundingRectangle`, `BackgroundRectangle`,
+  `Underline`, `Cross`, `Angle(l1, l2, radius=…, other_angle=…)`,
+  `RightAngle`, `angle_value`, `Title`, `Label`, `Checkmark`, `Clock`.
+- Grids: `Matrix([[1, 2], [3, 4]], cell=lambda s: Tex(s, size=0.7))`
+  (= `MatrixMobject`), `Table`, `DecimalTable`…; `get_entries`, `get_rows`,
+  `get_columns`, `get_cell(i, j)` with ONE-based `(row, column)`.
+- Style: `m.set_fill(color, opacity)`, `m.set_stroke(color, width=…,
+  opacity=…)`, `m.set_color(c)` (both), `m.set_opacity(a)`,
+  `m.set_style(fill_color=…, stroke_width=…, …)` (what you do not name is
+  untouched). Most constructors take `color`, `fill_color`, `fill_opacity`,
+  `stroke_color`, `stroke_width`, `stroke_opacity`, `opacity` and `z_index`.
+  `m.set_fill(opacity=0.5)` with NO colour keeps each point's own colour.
+  Setters return the mobject, so they chain.
+- Colours are hex strings; the palette is ManimGL's ∪ CE's at GL's values
+  (`YELLOW` is `#FFFF00`; CE's is `ManimCE.YELLOW`), plus the catalogues `X11`,
+  `XKCD`, `SVGNAMES`, `AS2700`, `BS381`, `DVIPSNAMES`. `color_gradient(colors,
+  n)`, `interpolate_color(a, b, t)` (RGBA floats, mixing the SQUARES like GL),
+  `m.set_color_by_gradient(BLUE, YELLOW)` (along a shape, across a group).
+- Groups: `VGroup(*mobs)` holds VMobjects only (it refuses anything else, as
+  in ManimGL) and takes style; `Group(*mobs)` holds ANY mobject — a
+  `ValueTracker`, a `Surface`, an `ImageMobject` — and moves and animates like
+  a VGroup. `VDict` is a VGroup addressed by name.
+- Draw order: the last added draws on top; `m.set_z_index(z)` sorts the
+  DRAWING only (stable); `self.bring_to_front(m)` / `self.bring_to_back(m)`
+  move `m` in `self.mobjects`, which is also the UPDATE order — a trail sent
+  to the back samples one frame late, so layer it with `set_z_index`.
+  `self.add(m)` of something already on stage moves it to the end.
+- Copies: `m.copy()` is deep (an `ImageMobject` shares its pixels);
+  `m.become(other)` adopts another's points and style; `m.save_state()` …
+  `Restore(m)`; `m.generate_target()` … `MoveToTarget(m)`.
+- Three centres: `get_center()` is the middle of the bounding box (what
+  `move_to` and `rotate` use); `get_center_of_mass()` is manim's mean of every
+  control point (a `Triangle`'s is (0, 1/7)); `get_real_center_of_mass()` is
+  the area centroid.
+- Paths by hand: `VMobject()` with `start_new_path`, `add_line_to`,
+  `add_quadratic_bezier_curve_to`, `add_arc_to`, `add_subpath`,
+  `set_points_as_corners`, `set_points_smoothly`; read back with `get_points`,
+  `get_subpaths`, `point_from_proportion` (by chord length) and
+  `quick_point_from_proportion` (equal per curve, what `MoveAlongPath` uses).
+- A shape of your own is a subclass. Call the base constructor FIRST and let
+  unknown keywords through to it, so a typo still raises:
+
+```python
+from janim import *
+
+
+class Chevron(VMobject):
+    def __init__(self, width=1.0, height=1.2, thickness=0.35, **kwargs):
+        super().__init__(**kwargs)
+        w, h, t = float(width), float(height) / 2, float(thickness)
+        self.set_points_as_corners(
+            [(-w, h, 0), (0, 0, 0), (-w, -h, 0), (-w + t, -h, 0), (t, 0, 0), (-w + t, h, 0), (-w, h, 0)],
+        )
+
+
+chevron = Chevron(width=0.5).set_fill(YELLOW, 1.0).set_stroke(opacity=0)
+```
+
+## Layout
+
+Place things RELATIVE to other things: hand-written coordinates are the first
+thing to break when a label grows. Sizes are scene units; the nominal frame is
+8 tall and 8·16/9 ≈ 14.22 wide, whatever the resolution.
+
+- `a.next_to(b, RIGHT, buff=0.25, aligned_edge=UP)` — `b` may be a mobject or
+  a point, and `aligned_edge` is the other axis (above AND flush left).
+- `a.align_to(b, LEFT)`, `m.to_edge(UP, buff=0.5)`, `m.to_corner(UR,
+  buff=0.5)`, `m.center()`, `m.move_to(point_or_mobject)`, `m.shift(v)`.
+  `to_edge`/`to_corner` use the NOMINAL frame: a camera zoom does not move
+  where they land (same as Manim).
+- `g.arrange(DOWN, buff=0.4, aligned_edge=LEFT)`, `g.arrange_in_grid(n_rows=3,
+  n_cols=3, buff=0.12)`, `m.surround(other, buff=0.25, stretch=True)`,
+  `m.replace(other, stretch=False)`.
+- `set_x`/`set_y`/`set_z`, `match_x`/`match_y`, `match_width`/`match_height`,
+  `match_color`/`match_style`, `set_width`/`set_height`, `scale(k,
+  about_point=…, about_edge=…)`, `scale((sx, sy, 1))` per axis, `stretch(k,
+  dim)`, `rescale_to_fit(length, dim)`, `rotate(angle, axis=OUT,
+  about_point=…)`, `flip()`; getters `get_left/right/top/bottom`,
+  `get_corner(UL)`, `get_bounding_box_point(direction)`, `get_width/height`.
+
+## Text and formulas (LaTeX only)
+
+- `Text(s, font="DejaVu Sans", size=… | font_size=…, color=…, t2c={…},
+  t2w={…})` — FreeType outlines straight to Béziers: no LaTeX, no Pango, no
+  complex shaping (Latin, Greek, Cyrillic). `size=` is Janim's scene unit,
+  `font_size=` Manim's (default 48): give one. Every glyph is a CHILD keyed by
+  its character (`text["a"]` is a VGroup of the a's).
+  `t2c={"orbit": YELLOW, range(0, 6): BLUE}` colours by substring or by
+  character range (0-based, half-open); `t2w={"word": "bold"}` changes the
+  weight, and a weight the font lacks is an ERROR (`FontNotFound`).
+- `Tex(r"x^2 + y^2", size=1.0, color=…, isolate=["x^2"], t2c={…})` is math
+  mode through real `latex` + `dvisvgm` → SVG (`MathTex` is the same class);
+  `TexText(r"Sea $x^2$ el área")` is text mode; `LTex`/`LMathTex` take
+  `template=TexTemplate()` and its `add_to_preamble(r"\usepackage{…}")`.
+  latex and dvisvgm must be on PATH; the SVGs are cached in
+  `$JANIM_TEX_CACHE` (default `~/.cache/janim/tex`).
+- A `Tex` is a parent plus ONE CHILD PER GLYPH, on purpose: with every glyph
+  in one path, a morph's intermediate blob cancels its neighbours' fill.
+- Parts: through LaTeX a glyph answers ONLY to the `isolate` patterns and
+  `t2c` keys given at construction. `tex["x^2"]` is the union of what that
+  key names, `tex.get_parts_by_tex("x")` one group per occurrence,
+  `tex.get_part_by_tex("x", 1)` the second; any other key is a `KeyError`
+  listing the keys there are. `Tex("f(", "x", ")")` isolates each argument;
+  by position, `tex[2]` and `tex[1:4]` (0-based).
+- `TransformMatchingTex(a, b, key_map={…}, match_shapes=False)` morphs glyphs
+  that share a key (longest first) and fades the rest; when it ends the scene
+  holds `b`. `TransformMatchingStrings` is its GL name;
+  `TransformMatchingShapes` pairs by shape, without keys.
+- Numbers: `DecimalNumber(x, num_decimal_places=2, unit=None,
+  include_sign=False, edge_to_fix=LEFT)` with `d.set_value(y)` (the left edge
+  stays; `edge_to_fix=ORIGIN` re-centres), `Integer(n)`,
+  `ChangeDecimalToValue(d, y)`, `ChangingDecimal(d, f)`, `CountInFrom(d, 0)`.
+  Text layouts: `Paragraph(*lines, alignment=LEFT)`, `BulletedList(*items)`.
+
+```python
+from janim import *
+
+label = Text("colour by substring and by range", size=0.6, t2c={"substring": YELLOW, range(24, 32): "#7FDD58"})
+formula = Tex(r"x^2 + 2xy + y^2", size=1.2, isolate=["x^2", "y^2", "2xy"])
+squares = VGroup(formula["x^2"], formula["y^2"])
+readout = DecimalNumber(3.14159, num_decimal_places=3, size=0.6)
+```
+
+## Animations and .animate
+
+- `self.play(*anims, run_time=…, rate_func=…, lag_ratio=…)` writes each dial
+  it is given into EVERY animation (GL's `update_rate_info`, with `is not
+  None`, so a 0 counts); `AnimationGroup(a, b, run_time=T)` is the form that
+  SHARES T. `self.wait(t, stop_condition=…)`, `self.wait_until(cond,
+  max_time=60)`. `play` adds the animation's mobject for you; adding it first
+  only makes it visible BEFORE it is created.
+- `.animate` is ManimGL's builder, EAGER: touching `m.animate`
+  calls `m.generate_target()` at once, each chained call mutates that target
+  NOW, and the animation is a `MoveToTarget`. The dials go in the call:
+  `m.animate(run_time=2, rate_func=linear).shift(RIGHT).rotate(PI)`. So the
+  target is built from the state when you WRITE the line, and two `.animate`
+  on the same mobject in one `play` share `m.target`: the LAST one wins. It
+  works on `vt.animate.set_value(10)`, on `self.frame`, and on any mobject
+  that implements the interpolation contract.
+- Creation: `ShowCreation`/`Create` (a group staggers: `lag_ratio=1.0`),
+  `Uncreate`, `Write`/`Unwrite`, `DrawBorderThenFill`, `FadeIn(m, shift=UP,
+  scale=1.0)`, `FadeOut`, `VFadeIn`/`VFadeOut` (opacity only),
+  `GrowFromCenter`, `GrowArrow`, `SpinInFromNothing`, `ShrinkToCenter`,
+  `AddTextLetterByLetter`. The removers (`FadeOut`, `Uncreate`, `Unwrite`)
+  hand the mobject back INTACT: re-add it and it is all there.
+- Morphs: `Transform(a, b, path_arc=0)` (never mutates `b`; the scene keeps
+  `a` wearing b's shape; different family sizes pad with INVISIBLE copies),
+  `ReplacementTransform` (the scene ends holding `b`), `TransformFromCopy`,
+  `FadeTransform`, `Swap`, `ApplyMatrix`, `ApplyPointwiseFunction`,
+  `Homotopy(f(x, y, z, t), m)`, `ApplyWave`, `PhaseFlow` (it INTEGRATES, so
+  it is not seekable).
+- Emphasis: `Indicate(m, scale_factor=1.2, color=YELLOW)`, `Flash(target,
+  num_lines=12, flash_radius=0.3)`, `Circumscribe(m, buff=0.1)`, `FocusOn`,
+  `Wiggle`, `Blink`, `ShowPassingFlash`, `FlashAround`. Motion: `Rotating(m,
+  angle=TAU, run_time=5)` (arcs), `Rotate(m, PI)`, `MoveAlongPath(m, path)`.
+- Time: `AnimationGroup(*a, lag_ratio=0, run_time=-1)` (−1 = until the last
+  one ends), `LaggedStart(*a, lag_ratio=0.05)`, `LaggedStartMap(FadeIn,
+  group, run_time=2.0)`, `Succession(*a)` — its own type because it BEGINS
+  each animation when its turn comes (a group begins them all at the start,
+  which is where they take their snapshots) — and `Wait(t)`.
+- Rate functions belong to the ANIMATION: `linear`, `smooth` (ManimGL's
+  quintic, not CE's sigmoid), `rush_into`, `rush_from`, `slow_into`,
+  `double_smooth`, `there_and_back`, `there_and_back_with_pause`,
+  `running_start`, `overshoot`, `not_quite_there`, `wiggle`, `lingering`,
+  `exponential_decay`, `squish_rate_func(f, a, b)`, and the easings.net family
+  `ease_{in,out,in_out}_{sine,quad,cubic,quart,quint,expo,circ,back,elastic,bounce}`.
+- An animation of your own subclasses `Animation`. Snapshot in `begin`, never
+  in `__init__` (a `Succession` may begin it much later); then override
+  `interpolate(self, alpha)` for the whole thing — applying `self.rate_func`
+  yourself — or `interpolate_submobject(self, sub, start, alpha)` and let
+  the generic `begin` photograph the family and spread `lag_ratio`. To drive
+  several mobjects, make its `mobject` a `Group` of all of them.
+  `turn_animation_into_updater(anim, cycle=False)` runs one as an updater.
+  Complete examples: `examples/tutorial/c2_02_custom_animations/`.
+
+## Updaters and trackers
+
+- `m.add_updater(lambda m, dt: …)` is time-based and `m.add_updater(lambda
+  m: …)` is not: the ARITY decides, as in ManimGL's master, and
+  whatever the second parameter is called. A DEFAULTED second parameter is
+  handed `dt` too: `lambda m, n=n: …` (a captured value, as scenes written for
+  the published ManimGL 1.7.2 do) receives `dt` in `n` — capture with a
+  closure or `functools.partial` instead. Registration calls it once with
+  `dt = 0`, so an integrator must guard with `if dt > 0`; `dt` is exactly
+  `1/fps` on every frame (a scene that accumulates it up to the exact edge of
+  its data steps over it: 300 × 0.1 is 30.000000000000156).
+  `remove_updater(f)`, `suspend_updating()`/`resume_updating()`; GL's sugar
+  `m.always.next_to(other, UP)` repeats the call every frame, and
+  `m.f_always.set_x(vt.get_value)` re-evaluates its argument functions.
+- `ValueTracker(x)` (`get_value`, `set_value`, `increment_value`),
+  `ComplexValueTracker(z)`, `always_redraw(f)` (rebuilds with `f()` every
+  frame and adopts the result with `become`, so the scene and any group keep
+  the SAME object), `TracedPath(m.get_center, stroke_width=2.0,
+  time_traced=…, smooth=False)`, `TracingTail`, `UpdateFromAlphaFunc(m,
+  lambda m, a: …)` (NO snapshot: it can drive a `Surface` or a type of your
+  own), `UpdateFromFunc(m, lambda m: …)`.
+- THE RULE that costs an afternoon: a mobject whose POINTS are made inside
+  an updater must be BORN with its final style; new points re-stamp the
+  factory style. `always_redraw` and `TracedPath` handle it for you. And
+  FREEZE an updater (a flag its closure reads) before fading its mobject out,
+  or it keeps re-stamping the style and the fade does nothing.
+- Update order is `self.mobjects` in order, then — with a composition
+  mounted — the layers' contents. `self.frame` is on stage from the start
+  (GL's `self.mobjects = [frame]`): `self.frame.add_updater(lambda f:
+  f.move_to(dot))` is a chase camera with no `add`.
+- Arrays written IN PLACE: a `DotCloud`'s `get_points()` is the live array
+  and the renderer sees the change. A `Surface`, a `TexturedSurface` and a
+  `DotCloud` measure their bounding box on every query, so `get_center()`
+  after `m.points[:] = …` is right; a `Group` ABOVE them (and every
+  `VMobject`) caches, so tell it with `m.note_changed_data()`.
+
+```python
+from janim import *
+
+t = ValueTracker(0.3)
+dot = Dot(ORIGIN, radius=0.11).set_fill(RED)
+dot.add_updater(lambda m: m.move_to((t.get_value(), 0, 0)))
+chord = always_redraw(lambda: Line(LEFT, (t.get_value(), 1, 0)).set_stroke(YELLOW, width=3.5))
+trail = TracedPath(dot.get_center, stroke_color=RED, stroke_width=2.5, time_traced=3.0)
+move = t.animate(rate_func=smooth).set_value(2.0)
+```
+
+## Coordinates and plots
+
+- `NumberLine(x_range, width=…, include_numbers=False, include_tip=False)`,
+  `Axes(x_range, y_range, width=…, height=…, include_numbers=False,
+  x_axis_config=…)` — any other keyword (`color`, `label_size`,
+  `numbers_to_exclude`…) goes to both axes —, `NumberPlane(x_range, y_range,
+  faded_line_ratio=4)`, `ComplexPlane`, `PolarPlane(r_max=4, radius=3)` with
+  `plane.polar_to_point(theta, r)`, `ThreeDAxes(…, width, height, depth)`.
+- `ax.c2p(x, y)` / `ax.p2c(point)`, `ax.plot(f, x_range=(a, b[, step]),
+  n=100, color=…, stroke_width=4.0, discontinuities=[…])` (a cut makes two
+  subpaths instead of a vertical jump), `ax.update_graph(graph, f)`
+  (re-samples IN PLACE), `ax.get_area(f_or_graph, x0, x1, opacity=0.35)`
+  (the EXACT polygon under the curve), `ax.get_graph_label(graph, "text",
+  x=…, direction=UR)`, `ax.get_v_line(x, y)`, `ax.get_h_line(x, y)`,
+  `ax.get_parametric_curve(f)`, `ax.x_axis`, `ax.x_range`.
+- THE DESIGN DECISION: the map is read off the LIVE geometry, never stored.
+  `ax.shift`, `ax.scale`, even `ax.rotate` move the whole coordinate world,
+  and `c2p` after the move lands right. An `Axes` IS a VGroup: add, fade and
+  animate the axes object itself.
+- Curves: `ParametricCurve(t_func, t_range=(t0, t1, dt), discontinuities=…)`,
+  `FunctionGraph(f, x_range=(-8, 8, 0.25))`, `ImplicitFunction(f,
+  x_range=…, y_range=…)` for f(x, y) = 0.
+- Your function's bits: `math.sin` depends on the system's libm and `np.sin`
+  on the CPU's SIMD path; both differ in the last bit on ~3 % of inputs. For
+  frames that are identical on every machine (and to Janim.jl), take `sin`,
+  `cos`, `exp`, `hypot`… from `janim.math` (Julia's libm, bit for bit; every
+  function takes a float or a whole array, and the array path is ~5× faster
+  per element than a Python loop) and the float ranges from the same module
+  (`step_range(a, b, h)` = `a:h:b`, `linear_range(a, b, n)`), write
+  `x * x * x` for `x^3`, and note that numpy 2 keeps `float * float32_array`
+  in float32 (cast to float64 first when you need double precision).
+
+```python
+from janim import *
+from janim.math import sin
+
+ax = Axes((-4.0, 4.0, 1.0), (-1.0, 1.0, 0.5), width=7.4, height=3.4, include_numbers=True, color="#37506B", label_size=0.3, num_decimal_places=1, numbers_to_exclude=[0.0])
+sine = ax.plot(sin, color=BLUE, stroke_width=4.0)
+area = ax.get_area(sin, 0.0, PI, color=BLUE, opacity=0.3)
+steps = ax.plot(lambda x: -1.0 if x < 0 else 1.0, x_range=(-2.4, 2.4), discontinuities=[0.0])
+marker = Dot(ax.c2p(1.0, sin(1.0)), radius=0.09).set_fill(YELLOW)
+```
+
+## SVG and images
+
+- `SVGMobject(path_or_xml_string, height=2.0, width=None, color=None)`: one
+  flat child per graphic element, and the file's `id`s become KEYS
+  (`svg["sun"]`; positions work too, `svg[3]`). Paths, basic shapes, nested
+  groups with the transform/style cascade, `defs`/`use`/`symbol`, gradients
+  and `<text>` are read. `clipPath`s take effect only through the compositor:
+  `clip_layers(svg)` returns the layers with their masks.
+- `ImageMobject(path_or_array, height=4.0, opacity=1.0)`: an array is
+  `(height, width, 3|4)` uint8, row 0 on top; PNG decodes natively, other
+  formats go through ffmpeg. `copy()` SHARES the pixels, so replace them with
+  `set_pixels(new_array)`. Mix images and vectors in a `Group`, never a
+  `VGroup`. `TexturedSurface(surface, image, opacity=1.0)` wraps a mesh.
+
+```python
+import numpy as np
+
+from janim import *
+
+badge = SVGMobject('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle id="head" cx="50" cy="34" r="22" fill="#E8A33D"/></svg>', height=3.0)
+head = badge["head"]
+pixels = np.zeros((64, 96, 3), dtype=np.uint8)
+pixels[:, :, 0] = np.linspace(0, 255, 96, dtype=np.uint8)
+photo = ImageMobject(pixels, height=2.0).next_to(badge, RIGHT)
+both = Group(badge, photo)
+```
+
+## 3D
+
+- `self.frame` is a `CameraFrame`, a mobject: animate it like any other.
+  `self.frame.reorient(theta_deg, phi_deg, gamma_deg, center=…, height=…)`,
+  `self.frame.animate.reorient(25, 55)`, `scale_frame(k)` (k < 1 zooms IN),
+  `set_frame_height(h)`, `move_to`, `shift`, `reset_frame()`,
+  `increment_theta(10, units=DEG)` (and `_phi`, `_gamma`),
+  `set_euler_angles`, `set_focal_distance`. Read it back from `self.camera`:
+  `get_theta()`, `get_phi()`, `get_gamma()`, `get_focal_distance()`,
+  `get_implied_camera_location()`. The orientation is a quaternion and
+  interpolates by slerp. `ThreeDScene` is a `Scene` born at `(-30, 70)` with
+  the depth test on.
+- The three switches: `m.apply_depth_test()` (join the z-buffer; OFF by
+  default, because in 2D order is the answer), `m.fix_in_frame()` (ignore the
+  camera: HUDs, titles), `m.set_shading(reflectiveness=…, gloss=…,
+  shadow=…)` (on a mesh, what you do not name is kept).
+- Meshes: `Surface(uv_func, u_range=…, v_range=…, resolution=(101, 101),
+  color=…, opacity=1.0, shading=(0.3, 0.2, 0.4))` — the normals travel as a
+  second point array, so transforms carry them; `Sphere(radius=…,
+  resolution=…)`, `Torus(r1=…, r2=…)`, `Cylinder`, `Cone`, `PlaneXY`,
+  `Dot3D`, `Line3D`, `Arrow3D`, `Square3D`, `SurfaceMesh(surface)`. `Cube`
+  and `Prism` are GL's six MESHES, `VCube`/`VPrism` the polygon forms (the
+  ones that take a stroke); `Prismify(flat, depth=…)` extrudes;
+  `Polyhedron(vertices, faces)` takes ZERO-based faces and carries `Tetrahedron`, `Octahedron`, `Icosahedron`,
+  `Dodecahedron`. `ThreeDModel("file.obj", height=3.0)` loads OBJ/MTL.
+- Points: `DotCloud(points, radius=0.05, color=…, glow_factor=0.0)` is ONE
+  draw call however many points; `GlowDots(points, radius=0.2,
+  glow_factor=2.0)`, `GlowDot`, `TrueDot`, `PGroup`; `set_colors(colors,
+  opacity=…)`, `set_radius`, `set_radii`, `make_3d()` (lit spheres).
+  Sparse clouds want `glow_factor`; dense overlapping dots saturate — put
+  them on a `Bloom` layer instead.
+- Fields: `VectorField(func, axes, density=2.0, magnitude_range=…)` (the whole
+  field is ONE mobject), `TimeVaryingVectorField(lambda c, t: …, axes)`,
+  `StreamLines(func, axes, density=1.0, solution_time=3.0, dt=0.05)` (RK4,
+  seeds jittered by a counter hash: the same bytes in any process),
+  `AnimatedStreamLines(sl)`, `ode_solution_points(func, state0, time, dt=…)`.
+
+```python
+from janim import *
+from janim.math import hypot, sin
+
+
+def ripple(u, v):
+    r = hypot(u, v) + 1e-6
+    return (u, v, 1.6 * sin(2 * r) / (1 + r))
+
+
+surface = Surface(ripple, u_range=(-3.0, 3.0), v_range=(-3.0, 3.0), resolution=(41, 41), color="#2C5F8A", opacity=0.92)
+ball = Sphere(radius=0.9, resolution=(41, 21), color=BLUE).shift((0, 0, 1.5))
+ball.set_shading(reflectiveness=0.5, gloss=0.4, shadow=0.35)
+hud = Text("z = 1.6 sin(2r) / (1 + r)", size=0.42).to_corner(UL).fix_in_frame()
+```
+
+## The compositor
+
+A `Composition` decides what is drawn: the scene's roots still receive their
+updaters, but the picture comes from the LAYERS, bottom to top. Inside a layer
+mobjects draw as in the direct path; between layers the work is in linear,
+premultiplied light.
+
+- `self.use_composition(Composition(*layers, background=(r, g, b, a)))`.
+- `Layer(*mobjects, blend="normal", opacity=1.0, effects=[…], mask=None,
+  matte=None, camera=None, window=None)` with the blends `"normal"`, `"add"`,
+  `"multiply"`, `"screen"`, `"overlay"`. `Layer(composition)` is a PRECOMP
+  (blur the result of a blend); `Layer(effects=[…])` with no content is an
+  ADJUSTMENT layer that grades everything below it; `matte="alpha"`,
+  `"luma"`, `"alpha_inv"` or `"luma_inv"` consumes the NEXT layer as coverage.
+- `Mask(*mobjects, invert=False, feather=0.0, hard=False, luma=False)`:
+  coverage per pixel, and the masking mobjects are never drawn (they still
+  update, so a mask can follow something). `crop(*mobjects, inside=shape)`
+  keeps a window, `crop(*mobjects, minus=shape)` punches a hole — exactly
+  one of the two, with `feather=`/`hard=`, returning a `Layer`. `feather`
+  blurs the MASK, not the layer.
+- A second camera: `Layer(*world, camera=zoom, window=display)` with
+  `zoom = CameraFrame()` is a REAL second render placed in the window's
+  projected box (centre-cropped to its aspect): magnifier, picture in
+  picture, split screen. It is what `ZoomedScene` was.
+- The seventeen effects, sizes in SCENE units (a 480p preview tells the truth
+  about the 1080p film) and `rate` in FRAMES — four blurs, `Blur(sigma,
+  in_pixels=False)`, `BoxBlur(radius)`, `DirectionalBlur(sigma, angle)`,
+  `RadialBlur(strength, center_point=(0, 0))`; the optics `Dof(focus=None,
+  aperture=0.4, max_sigma=4.0)` and `Bloom(threshold=0.6, intensity=1.0,
+  sigma=0.15)`; and the eleven editor effects `Glitch(intensity, seed, rate,
+  rgb_shift, slices, block)`, `CRT(intensity, scanlines, scan_depth, mask,
+  curvature, vignette, roll)`, `VHS(intensity, seed, rate, chroma_bleed,
+  jitter, noise, head_switch)`, `ColorAdjust(brightness, contrast,
+  saturation, hue)`, `Pixelate(size)`, `Vignette(amount, radius, feather)`,
+  `Grain(amount, seed, rate, levels)`, `ChromaticAberration(amount)`,
+  `Sharpen(amount, sigma=0.05)`, `Wave(amplitude, wavelength, angle, phase)`,
+  `EdgeDetect(amount, color, thickness)`.
+- A dial at identity skips the pass (the layer comes out bit for bit), with
+  three exceptions: `BoxBlur(0)` still uses one pixel,
+  `RadialBlur(0)` still takes its 32 samples, `Bloom(intensity=0)` still runs
+  its pyramid. Every field is mutable, so an updater can animate an effect.
+  Noise mixes the seed with the effect's TYPE NAME and the scene's frame
+  index — never a clock.
+- An effect of your own is a mutable object (a dataclass), a WGSL fragment
+  `fn fs_<name>(in: QuadOut)` registered with `effect_shader(name, source)`
+  (the registry splices in `sample_a`, `P`, the noise and `unpremult`), and
+  one handler `@apply_effect.register(MyEffect)` called as `(effect,
+  compositor, source)` that returns the slot it wrote — or `source` itself
+  at identity. Colour work divides by alpha first. `docs/compositor.md` and
+  the lessons of `examples/tutorial/c2_06_shaders` are the complete contract.
+- Outside a scene: `render_composition(comp, camera, rv=rv, cg=cg)` (RGB, top
+  row first) and `read_layer_rgba(layer, camera, rv=rv, cg=cg)`.
+
+```python
+from janim import *
+
+square = Square(fill_color=BLUE, fill_opacity=1)
+disc = Circle(fill_color=RED, fill_opacity=0.7).shift(RIGHT)
+zoom = CameraFrame().set_frame_height(1.2)
+display = Rectangle(width=4.5, height=4.5 * 9 / 16).to_corner(UR, buff=0.4)
+comp = Composition(
+    Layer(square, effects=[Blur(0.12)]),
+    Layer(disc, blend="screen", mask=Mask(Star(5, fill_opacity=1.0), feather=0.06)),
+    crop(Circle(radius=2.0, fill_opacity=1.0), minus=Square(side_length=1.0)),
+    Layer(square, disc, camera=zoom, window=display),
+    Layer(effects=[Vignette(amount=0.4)]),
+    background=(0.02, 0.03, 0.05, 1),
+)
+```
+
+## Simulations
+
+`janim.ode` is a Tsit5 integrator with the OrdinaryDiffEq API and
+`janim.ode.dual` is forward-mode automatic differentiation in the style of
+ForwardDiff (`from janim import *` brings `ODEProblem`, `Tsit5`, `init`,
+`step`, `solve`).
+
+- `ODEProblem(f, u0, tspan)` with `f(du, u, p, t)` writing `du` IN PLACE;
+  `integ = init(problem, Tsit5(), reltol=…, abstol=…)`; `step(integ, dt, True)`
+  lands on `t + dt` exactly (`integ.u`, `integ.t`); `solve(problem, Tsit5(),
+  saveat=…)` gives `.t`, `.u` through Tsit5's dense interpolant.
+- `from janim.ode.dual import gradient, abs2, dual_sum`: `gradient(f, x)`
+  differentiates code written with `+ − × ÷`, `abs2` and `dual_sum`, chunked
+  like ForwardDiff; `**`, `abs`, a comparison,
+  `float()`, `math.sin` or `np.sin` on a dual raise `TypeError` (never a
+  wrong derivative). `dual_sum(abs2(…), …)` is `sum(abs2, M)` over the parts
+  in column-major order.
+- FOUR RULES, all paid for: keep the integrator OUTSIDE the updater and `step`
+  it by `dt`; guard with `if dt > 0`; ONE integrator drives everything (two
+  "identical" chaotic runs diverge by themselves); do NOT motion-blur
+  integrated physics — sub-exposures split `dt`, and a double pendulum drifts
+  7.5e-11 at 2 s and 6.7e-2 at 20 s (`c3_05_motion_blur/05_physics_warning`).
+- With a composition mounted, drive the simulation from a scene-level
+  mobject: `self.mobjects` update before the layers' contents.
+
+```python
+import numpy as np
+
+from janim import *
+from janim.math import cos, sin
+
+
+def pendulum(du, u, p, t):
+    du[0] = u[1]
+    du[1] = -9.8 * sin(u[0])
+
+
+integ = init(ODEProblem(pendulum, [2.3, 0.0], (0.0, 1e4)), Tsit5(), reltol=1e-10, abstol=1e-10)
+pivot = np.array((0, 1.6, 0), dtype=np.float32)
+rod = VMobject().set_stroke(GREY_A, width=3.0)
+
+
+def swing(m, dt):
+    if dt > 0:
+        step(integ, dt, True)
+    theta = integ.u[0]
+    m.set_points_as_corners([pivot, pivot + np.array((1.15 * sin(theta), -1.15 * cos(theta), 0), dtype=np.float32)])
+
+
+rod.add_updater(swing)
+```
+
+## The CLI: `bin/janim`
+
+One ordinary Python process per call (no daemon).
+
+```bash
+bin/janim scene.py                    # no verb = the live window; -w writes, -p writes and opens, -s one frame
+bin/janim render scene.py -qm         # the video, written beside the scene
+bin/janim render scene.py:Intro -ql   # a named scene of a multi-scene file → scene_Intro.mp4
+bin/janim render scene.py -o out.mp4 -r 1280x720 --fps 30
+bin/janim render scene.py -n 3,5      # animations 3..5 (play/wait numbered from 1), NOT frames
+bin/janim render scene.py --from act2 # simulate the prefix without drawing, draw from the checkpoint
+bin/janim render scene.py --from 45 --to 90   # a frame range (also 1.5s)
+bin/janim render scene.py -s --to 90  # one frame as a PNG instead of a video
+bin/janim render scene.py -j 4        # the farm: 4 processes, joined by the same ffmpeg
+bin/janim render scene.py -t          # transparent: ProRes 4444 .mov (a still is an RGBA PNG)
+bin/janim frame scene.py 45 f.png     # frame K = the instant (K − ½)/fps, re-simulated from t = 0
+bin/janim preview scene.py            # the live window; it re-runs the file when it changes
+bin/janim states scene.py             # no checkpoint outlives a process, and it says so
+bin/janim codecs                      # what the CLI's ffmpeg can do
+```
+
+- Presets set resolution AND fps: `-qs` 640×360@10, `-ql` 854×480@15, `-qm`
+  1280×720@30 (the CLI default), `-qh` 1920×1080@60, `-qq` 2560×1440@60,
+  `-qk` 3840×2160@60; `-r WxH` and `--fps N` override the part they name, and
+  the LAST flag wins. `--samples 0|1|4` (0 is 4); `--out_dir DIR`.
+- Every `scene.py` also accepts `scene.py:Class` or `scene.py Class`; a file
+  with one Scene subclass needs no name. `self.checkpoint("act2")` marks a
+  point for `--from`. No flag is ignored in silence: impossible combinations
+  (`-s` with `-j`, `-t` with `-j`, `-j` with `--from`, a label the scene never
+  reaches, an `-n` that draws nothing) are errors with their reason.
+- `janim check | finish | ping | daemon | stop` are one-line no-ops. Keys:
+  Esc/q quit, space pause, `,`/`.` a frame, ←/→ ∓1 s, `[`/`]` an animation,
+  PgUp/PgDn a checkpoint, `d`+mouse orbit, `f`+mouse pan, wheel zoom.
+- In code: `render_segment(Demo, out, frames=range(20, 51))`,
+  `render_from(Demo, out, "act2", simulate_prefix=True)`,
+  `render_parallel("scene.py", out, n=4, frames_total=…)`,
+  `Scene(preview=True)` (a visible window showing each frame).
+- `self.add_sound("clap.wav", time_offset=0.0, time=None, gain=0.0)` queues a
+  track that is MUXED when the scene closes (`adelay` + `amix`, `-c:v copy`):
+  the video bytes do not change.
+
+## Determinism
+
+- The same code gives the same FRAMES, byte for byte, in any process. So no
+  unseeded randomness
+  (`np.random.default_rng(seed)` is fine) and no wall-clock time in a scene;
+  the clock is fixed (`dt = 1/fps`).
+- The `Scene` kwarg `frame_tap=lambda index, data: …` sees each frame's raw
+  RGB bytes before the encoder, as a read-only view valid during the call
+  only: hash it there (`hashlib.sha256(data).hexdigest()`) to compare runs.
+- The mp4 CONTAINER is x264's: `encoder_threads=None` (the default) lets x264
+  thread; `encoder_threads=1` makes the file itself reproducible. `crf=23` and
+  `preset="medium"` are the defaults; `crf=0` is lossless. The CLI
+  reads `JANIM_FFMPEG`, `JANIM_CRF` and `JANIM_ENCODER_THREADS`, none of which
+  changes a pixel.
+- `samples=0` means 4× MSAA (the fill's antialiasing); `samples=1` is the
+  aliased control. `transparent=True` writes RGBA PNG or ProRes `.mov`. A
+  scene with no `play`/`wait` writes a PNG instead of an empty video.
+- RADV, lavapipe and Metal give different pictures, each reproducible: parity
+  is WITHIN a route. `driver_header(gpu_info())` names the route that ran.
+
+## Examples and lessons
+
+- `examples/gallery/*.py` — short showcase scenes; `examples/scenes/*.py` —
+  larger scenes (their on-screen prose is Spanish on purpose: it is the
+  content); `examples/demo/*.py` — demos of the compositor, cameras and
+  physics; `examples/assets/` — the SVGs the scenes load.
+- `examples/tutorial/` — the four courses, one runnable lesson per file; its
+  `README.md` is the index. Every lesson is a `Scene` you can render, preview,
+  edit and break; the explanation lives in its docstring. Render one with
+  `bin/janim render examples/tutorial/<course>/<file>.py -ql`.
+- `scripts/bootstrap.sh` creates the `.venv` the `bin/janim` launcher uses.
+
+## Deliberately absent
+
+- No `config`, `tempconfig`, `manim.cfg` or `janim.cfg`: the
+  settings are `Scene` kwargs — `CLI flag > the kwargs in your script >
+  defaults` — and a plain dict splatted into the call is the config dict.
+- No daemon and no frame cache: one process per call.
+- No `:math` or `:typst` route: every formula is LaTeX, and a glyph
+  answers only to the `isolate`/`t2c` keys you gave.
+- No motion blur in the loop: `Scene` takes no `motion_blur`, and the CLI
+  refuses `--motion-blur` by name (exit 2). `render_frame_motion` is the
+  motion-blurred still that remains.
+- No path booleans (`Union`, `Intersection`, `Difference`, `Exclusion`);
+  `Cutout(shape, *holes)` covers "shape minus shapes".
+- No syntax-highlighted `Code`.
+- Also out: `MarkupText` (no Pango), CE's arrow-tip zoo (an `Arrow` is ONE
+  contour with its tip inside), `Graph` (its layouts need networkx), GL's
+  widgets and the relics.
+- No plugin registry: extension is Python's own — a `VMobject` subclass for
+  a shape (above), an `Animation` subclass for an animation, and for a type
+  that is not geometry a `Mobject` subclass with the interpolation contract
+  (`is_interpolable = True`, `align_data`, `interpolate(first, second,
+  alpha)`, `become`), which is how `ValueTracker` and `CameraFrame` are built.

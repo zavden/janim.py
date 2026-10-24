@@ -22,7 +22,7 @@ class TextLesson(Scene):
 
 class LatexConfig(Scene):
     def construct(self):
-        title = Text("LaTeX: documentos, medidas y claves", size=0.44, color=GREY_A).to_edge(UP, buff=0.4)
+        title = Text("LaTeX: documents, measurements and keys", size=0.44, color=GREY_A).to_edge(UP, buff=0.4)
         self.add(title)
         formula = Tex(r"\frac{a^2}{b} + \sqrt{c}", size=0.9).set_color("#E8A33D")
         label = Text("LaTeX", size=0.35, color=GREY_C)

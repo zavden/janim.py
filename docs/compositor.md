@@ -1,14 +1,14 @@
-# Capas y efectos
+# Layers and effects
 
-Una `Composition` define lo que se dibuja. Las raíces de la escena siguen
-recibiendo sus updaters, pero el dibujo sale de sus capas, de abajo arriba.
-Dentro de una capa los objetos se dibujan como en la ruta directa; entre
-capas la composición y los efectos trabajan con luz lineal premultiplicada.
-Los tres shaders del fill descartan el triángulo Loop–Blinn de un lado
-recto más fino que 2⁻⁹ px de ventana: lavapipe fabricaba en él un téxel NaN
-que la ruta compuesta arrastraba bajo cualquier efecto. Poner
-`_FILL_THIN_PX = 0` en `janim/backend/wgpu/pipelines.py` desactiva ese
-descarte.
+A `Composition` defines what is drawn. Scene roots still receive their
+updaters, but drawing comes from the layers, from bottom to top.
+Within a layer, objects are drawn as in the direct path; between layers,
+composition and effects work in premultiplied linear light.
+The three fill shaders discard the Loop–Blinn triangle of a straight edge
+thinner than 2⁻⁹ window pixels: lavapipe produced a NaN texel there that
+the composited path propagated through any effect. Setting
+`_FILL_THIN_PX = 0` in `janim/backend/wgpu/pipelines.py` disables that
+discard.
 
 ```python
 from janim import *
@@ -30,64 +30,65 @@ class LayerExample(Scene):
         self.wait()
 ```
 
-Los modos de mezcla son `normal`, `add`, `multiply`, `screen` y `overlay`.
-La opacidad de capa multiplica su imagen terminada. `Layer(composition)`
-anida una composición con acumuladores propios; `Layer(effects=[...])`
-aplica sus efectos a lo compuesto debajo. Una capa de ajuste solo lleva
-efectos: máscara, opacidad, blend, matte, cámara y ventana son errores.
+Blend modes are `normal`, `add`, `multiply`, `screen` and `overlay`.
+Layer opacity multiplies its finished image. `Layer(composition)` nests a
+composition with its own accumulators; `Layer(effects=[...])` applies its
+effects to the composite below. An adjustment layer only carries effects:
+mask, opacity, blend, matte, camera and window are errors.
 
-`Mask(*mobjects, invert=False, feather=0, hard=False, luma=False)` recorta
-el contenido. `crop(*mobjects, inside=shape)` y `crop(*mobjects, minus=shape)`
-construyen esos recortes. La máscara se dibuja en el espacio del padre,
-después de colocar la ventana. Su feather se mide también en ese espacio.
-Un `matte="alpha"`, `"luma"`, `"alpha_inv"` o `"luma_inv"` consume la capa
-siguiente: usa su contenido y cámara, omitiendo sus efectos y máscara.
+`Mask(*mobjects, invert=False, feather=0, hard=False, luma=False)` clips
+the content. `crop(*mobjects, inside=shape)` and `crop(*mobjects, minus=shape)`
+build those cutouts. The mask is drawn in the parent's space, after placing
+the window. Its feather is also measured in that space.
+A `matte="alpha"`, `"luma"`, `"alpha_inv"` or `"luma_inv"` consumes the
+next layer: it uses its content and camera, skipping its effects and mask.
 
-`Layer(*world, camera=view, window=rectangle)` crea una vista del mundo en
-una ventana. `view` es un `CameraFrame`; el rectángulo se proyecta con la
-cámara del padre y su aspecto recorta el centro de la vista. Sus efectos
-se calculan antes de reducirla a la ventana, con la escala de su cámara.
-Las cámaras interiores sobrescriben la vista heredada de una precomposición.
+`Layer(*world, camera=view, window=rectangle)` creates a view of the world
+in a window. `view` is a `CameraFrame`; the rectangle is projected with the
+parent's camera and its aspect ratio crops the center of the view. Its
+effects are computed before scaling it down to the window, at its camera's
+scale. Inner cameras override the view inherited from a precomposition.
 
-Los objetos compartidos se actualizan una vez. Primero corren las raíces
-de escena, después los contenidos y máscaras, y finalmente las cámaras y
-ventanas que aún no estaban en esas listas. `remove` y los reemplazos de
-animación recorren también las capas anidadas. `clear` solo vacía raíces.
-`describe(scene)` muestra el árbol de capas y máscaras además de las raíces.
+Shared objects update once. Scene roots run first, followed by content and
+masks, and finally cameras and windows that were not already in those lists.
+`remove` and animation replacements also traverse nested layers. `clear`
+only empties roots. `describe(scene)` shows the layer and mask tree alongside
+the roots.
 
-| Efecto | Parámetros principales | Unidad |
+| Effect | Main parameters | Unit |
 |---|---|---|
-| `Blur(sigma, in_pixels=False)` | sigma | Escena, o píxeles explícitos |
-| `BoxBlur(radius)` | radius | Escena |
-| `DirectionalBlur(sigma, angle)` | sigma, angle | Escena y radianes |
-| `RadialBlur(strength, center_point=(0, 0))` | strength, center_point | Fracción y escena |
-| `Dof(focus=None, aperture=0.4, max_sigma=4)` | Distancia al plano focal | Escena |
-| `Bloom(threshold=0.6, intensity=1, sigma=0.15)` | Umbral, ganancia, sigma | Luz lineal y escena |
-| `Glitch()` | intensity, seed, rate, rgb_shift, slices, block | Escena y frames |
-| `CRT()` | intensity, scanlines, scan_depth, mask, curvature, vignette, roll | Cantidades y fracciones |
-| `VHS()` | intensity, seed, rate, chroma_bleed, jitter, noise, head_switch | Escena, frames y fracciones |
-| `ColorAdjust()` | brightness, contrast, saturation, hue | Factores y radianes |
-| `Pixelate(size=0.2)` | size | Escena |
-| `Vignette()` | amount, radius, feather | Fracciones de la semidiagonal |
-| `Grain()` | amount, seed, rate, levels=8 | Factores y frames |
-| `ChromaticAberration(amount=0.1)` | amount | Escena |
-| `Sharpen(amount=0.6, sigma=0.05)` | amount, sigma | Factor y escena |
-| `Wave()` | amplitude, wavelength, angle, phase | Escena y radianes |
-| `EdgeDetect()` | amount, color, thickness | Factor, color y píxeles |
+| `Blur(sigma, in_pixels=False)` | sigma | Scene units, or explicit pixels |
+| `BoxBlur(radius)` | radius | Scene units |
+| `DirectionalBlur(sigma, angle)` | sigma, angle | Scene units and radians |
+| `RadialBlur(strength, center_point=(0, 0))` | strength, center_point | Fraction and scene units |
+| `Dof(focus=None, aperture=0.4, max_sigma=4)` | Distance to the focal plane | Scene units |
+| `Bloom(threshold=0.6, intensity=1, sigma=0.15)` | Threshold, gain, sigma | Linear light and scene units |
+| `Glitch()` | intensity, seed, rate, rgb_shift, slices, block | Scene units and frames |
+| `CRT()` | intensity, scanlines, scan_depth, mask, curvature, vignette, roll | Counts and fractions |
+| `VHS()` | intensity, seed, rate, chroma_bleed, jitter, noise, head_switch | Scene units, frames and fractions |
+| `ColorAdjust()` | brightness, contrast, saturation, hue | Factors and radians |
+| `Pixelate(size=0.2)` | size | Scene units |
+| `Vignette()` | amount, radius, feather | Fractions of the half-diagonal |
+| `Grain()` | amount, seed, rate, levels=8 | Factors and frames |
+| `ChromaticAberration(amount=0.1)` | amount | Scene units |
+| `Sharpen(amount=0.6, sigma=0.05)` | amount, sigma | Factor and scene units |
+| `Wave()` | amplitude, wavelength, angle, phase | Scene units and radians |
+| `EdgeDetect()` | amount, color, thickness | Factor, color and pixels |
 
-Los campos son mutables y pueden cambiar desde un updater. `rate` cuenta
-frames. El ruido mezcla la semilla con el nombre del tipo y el índice de
-frame de la escena; no consulta un reloj externo. Un campo `current_frame`
-recibe ese índice automáticamente y requiere un objeto mutable.
+Fields are mutable and can change from an updater. `rate` counts frames.
+Noise mixes the seed with the type name and the scene's frame index; it
+does not consult an external clock. A `current_frame` field receives that
+index automatically and requires a mutable object.
 
-Un efecto con sus mandos en identidad omite el pase, con tres excepciones: `BoxBlur(0)` usa al menos un píxel de radio,
-`RadialBlur(0)` ejecuta sus 32 muestras y `Bloom(intensity=0)` ejecuta la
-pirámide y su suma saturante. Los kernels gaussianos y de caja avisan
-cuando el radio pedido supera los 63 píxeles admitidos.
+An effect with its controls at identity skips the pass, with three exceptions:
+`BoxBlur(0)` uses at least a one-pixel radius, `RadialBlur(0)` runs its 32
+samples, and `Bloom(intensity=0)` runs the pyramid and its saturating sum.
+Gaussian and box kernels warn when the requested radius exceeds the
+supported 63 pixels.
 
-Un shader propio se registra con `effect_shader`. El handler se registra
-por tipo y recibe la ranura de origen; devuelve esa misma ranura si es
-identidad, o una ranura temporal con el resultado. Ejemplo mínimo:
+Register a custom shader with `effect_shader`. The handler is registered
+by type and receives the source slot; it returns that same slot for
+identity, or a scratch slot containing the result. Minimal example:
 
 ```python
 from dataclasses import dataclass
@@ -125,13 +126,13 @@ def posterize(effect, compositor, source):
     )
 ```
 
-El registro añade `sample_a`, `sample_b`, `P`, las funciones de ruido y
-`unpremult`/`luma`. Registrar de nuevo el mismo nombre recompila en el
-siguiente uso. Los nombres de fábrica están reservados. Los efectos de
-color deben dividir por alfa antes de operar y multiplicarlo al terminar.
+Registration adds `sample_a`, `sample_b`, `P`, the noise functions and
+`unpremult`/`luma`. Registering the same name again recompiles it on the
+next use. Built-in names are reserved. Color effects must divide by alpha
+before operating and multiply by it afterward.
 
-Para usos fuera de `Scene`, `render_composition(comp, camera, rv=rv, cg=cg)`
-devuelve RGB de arriba abajo. `read_layer_rgba(layer, camera, rv=rv, cg=cg)`
-devuelve RGBA recto, con la primera fila abajo. El `flip_y` de la ruta
-directa es distinto del vídeo en efectos verticalmente asimétricos como VHS;
-cada función mantiene su propio contrato.
+For use outside `Scene`, `render_composition(comp, camera, rv=rv, cg=cg)`
+returns top-down RGB. `read_layer_rgba(layer, camera, rv=rv, cg=cg)`
+returns straight RGBA, with the bottom row first. The direct path's `flip_y`
+differs from video for vertically asymmetric effects such as VHS; each
+function maintains its own contract.

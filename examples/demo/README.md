@@ -1,121 +1,124 @@
-# demo/ — doce cosas que Janim hace y Manim no puede, en Python
+# demo/ — twelve things Janim does that Manim cannot, in Python
 
-Escenas de demostración de Janim: escenas cortas (7–23 s, 1280×720) que
-viven cada una sobre UNA capacidad que ni ManimCE ni ManimGL tienen — el
-compositor por capas y todo lo que cuelga de él (máscaras, modos de fusión,
-efectos, una cámara por capa) más la física dentro de un updater y una nube
-de un millón de partículas.
+Janim demonstration scenes: short scenes (7–23 s, 1280×720), each built
+around ONE capability that neither ManimCE nor ManimGL has — the layer
+compositor and everything built on it (masks, blend modes, effects, a
+camera per layer), plus physics inside an updater and a million-particle cloud.
 
-Los comentarios van en **español**; los identificadores son la API y siguen
-en inglés. **Los textos que se dibujan en pantalla van en inglés** (rótulos,
-pies, títulos): es material de demostración, no de estudio.
+Comments, identifiers and on-screen text (labels, captions, titles) are in
+**English**. The original Spanish-commented files are preserved alongside
+them as `*.es.py`; the original guide is [README.es.md](README.es.md).
 
-## Cómo renderizarlas
+## How to render them
 
-Desde la raíz del repositorio, dentro del entorno virtual del proyecto, por el
-CLI (un proceso por llamada):
-
-```bash
-bin/janim render examples/demo/03_portals.py -ql     # el vídeo, junto a la escena
-bin/janim examples/demo/09_reflection.py             # la ventana viva (preview)
-bin/janim frame examples/demo/03_portals.py 90 f.png -ql   # UN frame (re-simula desde t = 0)
-```
-
-Los presets fijan resolución Y fps: `-qs` 640×360@10, `-ql` 854×480@15,
-`-qm` 1280×720@30 (el default del CLI), `-qh` 1920×1080@60. Cada fichero
-tiene una sola escena, así que no hace falta nombrar la clase.
-
-Cada fichero es también un script completo con su pie:
+From the repository root, inside the project's virtual environment,
+through the CLI (one process per call):
 
 ```bash
-python examples/demo/12_motion_blur.py   # 1280×720@30, mp4 junto al .py
+bin/janim render examples/demo/03_portals.py -ql     # video, beside the scene
+bin/janim examples/demo/09_reflection.py             # live window (preview)
+bin/janim frame examples/demo/03_portals.py 90 f.png -ql   # ONE frame (re-simulates from t = 0)
 ```
 
-`JANIM_HEADLESS=1` delante de cualquiera de estas órdenes renderiza en la
-CPU (lavapipe); sin ella, la GPU nativa.
+Presets set resolution AND fps: `-qs` 640×360@10, `-ql` 854×480@15,
+`-qm` 1280×720@30 (the CLI default), `-qh` 1920×1080@60. Each file
+contains a single scene, so there is no need to name the class.
 
-Un aviso que puede salir al arrancar (una vez por cada σ que no cabe) y no
-es un error: `RuntimeWarning: gaussian-kernel-radius-limit`. El kernel del
-compositor calcula entero hasta un radio de 63 px (σ = 21 px), y un efecto
-que pide más avisa en vez de callarse: el halo sale algo más estrecho de lo
-pedido. La 09 a 720p, por ejemplo, avisa tres veces: los niveles 2σ y 4σ de
-su Bloom y el `feather = 0.7` de la máscara del reflejo (63 px de σ).
+Each file is also a complete script with its own entry point:
 
-## El índice
+```bash
+python examples/demo/12_motion_blur.py   # 1280×720@30, mp4 beside the .py
+```
 
-| # | fichero | clase | lo que solo Janim puede hacer | dur. |
+Prefix any of these commands with `JANIM_HEADLESS=1` to render on the
+CPU (lavapipe); without it, the native GPU is used.
+
+A warning that may appear at startup (once for each σ that does not fit)
+is not an error: `RuntimeWarning: gaussian-kernel-radius-limit`. The
+compositor kernel computes in full up to a radius of 63 px (σ = 21 px);
+an effect asking for more warns instead of silently accepting it:
+the halo is slightly narrower than requested. Demo 09 at 720p, for
+example, warns three times: its Bloom's 2σ and 4σ levels, and the
+reflection mask's `feather = 0.7` (63 px of σ).
+
+## Index
+
+| # | file | class | what only Janim can do | duration |
 |---|---|---|---|---|
-| 01 | `01_multicam.py` | `Multicam` | **una cámara por capa**: cuatro vistas del MISMO mundo 3D, cada una con su z-buffer, los updaters corriendo una sola vez. | 14 s |
-| 02 | `02_pendulum_glow.py` | `PendulumGlow` | **física (Tsit5 de `janim.ode`) en un updater + capa aditiva con Bloom + máscara animada**: un doble péndulo con la rejilla entera; la estela se une con `set_points_smoothly`, la masa lleva un `GlowDot` detrás (halo redondo por fragmento) y el foco que sigue a la punta es un `crop` con `feather`. | 23 s |
-| 03 | `03_portals.py` | `Portals` | **multicámara con máscaras, en 2D**: una roseta en el centro (la cámara de la escena) y dos lupas ×3 IGUALES a los lados —un círculo y una estrella que GIRA sobre sí misma—, cada una con una cámara que persigue a su punto (updater sobre el `CameraFrame`); la forma del portal es solo la máscara (`window` + `crop`), y por eso puede girar con la imagen quieta. | 14 s |
-| 04 | `04_lorenz_glow.py` | `LorenzGlow` | **10⁶ partículas `GlowDots` + `"add"` + Bloom**: el atractor de Lorenz con 15 s de vuelo de cámara. | 18 s |
-| 05 | `05_rack_focus.py` | `RackFocus` | **profundidad de campo por capa** (`Dof`): cinco fórmulas a cinco profundidades, el foco viaja de la más cercana a la más lejana escribiendo un número; paralaje de propina. | 13 s |
-| 06 | `06_broadcast.py` | `BroadcastScene` | **los efectos de editor** (`Glitch`, `CRT` con `roll`, `VHS`, `ColorAdjust`) sobre una fórmula que sigue morfando debajo; cada dial vuelve a un cero que es un no-op exacto. | 20 s |
-| 07 | `07_text_mask.py` | `TextMask` | **texto como máscara de un render 3D con luz**: «JANIM» recortando un mar de olas visto por su propia cámara, y el vuelo de cabecera a través de la «I». | 14 s |
-| 08 | `08_light_vs_pigment.py` | `LightVsPigment` | **modos de fusión en luz lineal**: R+G+B = blanco con `"add"`, C×M×Y = negro con `"multiply"`, cada disco en su capa, los de luz en una precomposición con Bloom. | 12 s |
-| 09 | `09_reflection.py` | `Reflection` | **un reflejo de verdad**: copia volteada en una capa con `Wave` (fase animada), `Blur`, `opacity` y una `Mask` con `feather` que la apaga con la distancia; luna y estrellas con Bloom, `Vignette` de ajuste. | 13 s |
-| 10 | `10_motion_blur.py` | `MotionBlur` | una rueda que acelera, cuatro órbitas y un barrido de cámara, escritos para un **motion blur** por sub-exposiciones que el bucle de render no aplica: el vídeo sale con exposiciones simples (abajo). | 9 s |
-| 11 | `11_chase_camera.py` | `ChaseCamera` | **persecución y minimapa**: un cometa por un nudo trébol con la principal orbitando, una cámara de PERSECUCIÓN por updater (lo que en CE pide un `ZoomedScene`) y un minimapa cenital en ventana cuadrada; el HUD con `fix_in_frame()` no derrapa. | 22 s |
-| 12 | `12_motion_blur.py` | `MotionBlurWelcome` | variante de la 10: «Welcome / to / JANIM» entrando a látigo, «JANIM» en Fredoka Expanded; también escrita para el motion blur por sub-exposiciones. | 7 s |
+| 01 | `01_multicam.py` | `Multicam` | **One camera per layer**: four views of the SAME 3D world, each with its own z-buffer, with updaters running only once. | 14 s |
+| 02 | `02_pendulum_glow.py` | `PendulumGlow` | **Physics (`janim.ode`'s Tsit5) in an updater + an additive layer with Bloom + an animated mask**: a double pendulum with the full grid; the trail is joined with `set_points_smoothly`, the bob has a `GlowDot` behind it (a round per-fragment halo), and the spotlight following the tip is a `crop` with `feather`. | 23 s |
+| 03 | `03_portals.py` | `Portals` | **Masked multicamera in 2D**: a rosette in the center (the scene camera) and two IDENTICAL ×3 magnifiers at the sides — a circle and a star that SPINS in place — each with a camera chasing its dot (an updater on the `CameraFrame`); the portal shape is just the mask (`window` + `crop`), so it can rotate while the image stays upright. | 14 s |
+| 04 | `04_lorenz_glow.py` | `LorenzGlow` | **10⁶ `GlowDots` particles + `"add"` + Bloom**: the Lorenz attractor with a 15 s camera flight. | 18 s |
+| 05 | `05_rack_focus.py` | `RackFocus` | **Per-layer depth of field** (`Dof`): five formulas at five depths; focus travels from nearest to farthest by writing a number, with parallax as a bonus. | 13 s |
+| 06 | `06_broadcast.py` | `BroadcastScene` | **Editor effects** (`Glitch`, `CRT` with `roll`, `VHS`, `ColorAdjust`) over a formula that keeps morphing underneath; every dial returns to zero, an exact no-op. | 20 s |
+| 07 | `07_text_mask.py` | `TextMask` | **Text masking a lit 3D render**: “JANIM” clips a sea of waves seen through its own camera, ending with an opening-title flight through the “I”. | 14 s |
+| 08 | `08_light_vs_pigment.py` | `LightVsPigment` | **Blend modes in linear light**: R+G+B = white with `"add"`, C×M×Y = black with `"multiply"`, each disc in its own layer, light discs in a precomposition with Bloom. | 12 s |
+| 09 | `09_reflection.py` | `Reflection` | **A real reflection**: a flipped copy in a layer with `Wave` (animated phase), `Blur`, `opacity` and a feathered `Mask` that fades it with distance; moon and stars with Bloom, adjustment `Vignette`. | 13 s |
+| 10 | `10_motion_blur.py` | `MotionBlur` | An accelerating wheel, four orbits and a camera sweep, written for sub-exposure **motion blur** that the render loop does not apply: video uses single exposures (below). | 9 s |
+| 11 | `11_chase_camera.py` | `ChaseCamera` | **Chase and minimap**: a comet on a trefoil knot with the main camera orbiting, a CHASE camera driven by an updater (what requires a `ZoomedScene` in CE), and an overhead minimap in a square window; the HUD stays put with `fix_in_frame()`. | 22 s |
+| 12 | `12_motion_blur.py` | `MotionBlurWelcome` | A variation on 10: “Welcome / to / JANIM” whipping in, “JANIM” in Fredoka Expanded; also written for sub-exposure motion blur. | 7 s |
 
-## Lo que cuesta verlas bien (y por qué está así)
+## What it takes to make them look right (and why)
 
-- **Un disco por capa** (08). Dentro de una misma capa los mobjects se tapan;
-  el modo de fusión actúa entre la capa entera y lo de debajo. Si los tres
-  discos fueran una sola capa, `"add"` no sumaría nada.
-- **La máscara no se dibuja; el aro sí** (03, 07). La forma que recorta va
-  rellena de blanco y no entra en ninguna capa de contenido; el borde visible
-  es OTRO mobject con solo stroke, en una capa por encima.
-- **El centro de la caja de una estrella no es su centro** (03). `rotate`
-  gira sobre `get_center()` (la caja), que en una estrella de cinco puntas
-  está 0.2 u por encima del centro real: la estrella orbitaba en vez de
-  girar. Colocarla y girarla por `get_real_center_of_mass()` (el centroide
-  exacto) lo arregla. Y como `window=` coloca la imagen en la CAJA del
-  mobject, una estrella que gira haría bailar la imagen ±0.2 u: la ventana de
-  esa capa es un cuadrado fijo que no se dibuja, y la estrella es solo la
-  máscara.
-- **Una cola del color del trazo no se ve** (03). La `TracingTail` amarilla
-  sobre la roseta con degradado desaparecía al pasar por el lóbulo amarillo;
-  blanca y más gruesa se lee en las tres vistas.
-- **Dos animaciones sobre un mismo mobject se pisan** (07). Cada una escribe
-  el estado entero, así que un `FadeOut` y un `.animate` a la vez sobre el aro
-  dejaban al aro quieto. Un solo `.animate` con dos operaciones encadenadas
-  (`.scale(90.0, about_point=anchor).set_stroke(opacity=0.0)`) hace las dos
-  cosas.
-- **σ tiene un techo honesto**: 0.23 unidades a 720p (21 px). El `Dof` de 05
-  pone `max_sigma=0.23` por eso; pedir 3.0 solo produce el aviso de arriba y
-  un blur recortado.
-- **Un Bloom recortado hace halos CUADRADOS** (02). El nivel 4σ de la
-  pirámide con `sigma=0.16` pedía 58 px y el kernel lo cortaba a ±63: una
-  gaussiana truncada es casi una caja, y una caja separable H+V alrededor de
-  un punto brillante es un cuadrado. Sobre un trazo largo no se nota; sobre
-  la masa sí. Arreglo doble: `sigma=0.055` (los tres niveles caben) y un
-  `GlowDot` detrás de la masa, que es un halo redondo por fragmento y no
-  depende del kernel.
-- **El estado inicial ya dibujado** (02). Varilla, masas y foco se colocan en
-  la posición del estado inicial ANTES de arrancar el integrador: nada nace
-  en el origen para saltar un frame después.
-- **El motion blur en el bucle de render no existe** (04, 10, 12). `Scene`
-  no tiene un kwarg `motion_blur` y el CLI rechaza `--motion-blur` por su
-  nombre (exit 2). Las escenas se renderizan sin él; la animación es la misma.
-- **`render_frame_motion` no enseña un motion blur de verdad**: renderiza el
-  frame que contiene cada sub-exposición, y como la ventana del obturador
-  (`shutter / fps`) es más corta que un frame, promedia como mucho DOS frames
-  distintos — dos copias, no una estela. Medido en la 10 a t = 4 s:
-  `render_frame_motion(MotionBlur, 4.0, n=8, shutter=0.5, fps=30)` da cada
-  partícula dos veces. Para muestrear de verdad el obturador de 180° de
-  30 fps hay que darle un reloj más fino y abrir el obturador en proporción:
-  `render_frame_motion(MotionBlur, 4.0, n=8, shutter=4.0, fps=240)` reparte
-  las ocho sub-exposiciones en cuatro frames de 1/240 s y sale una estela.
-  Solo vale para escenas cuyo estado es función del tiempo (la 10, la 12): un
-  integrador que avanza con `dt` (02, 04) simula OTRA cosa a otros fps.
-- **Detalles numéricos de Python** que las escenas cuidan para que los
-  fotogramas salgan siempre iguales: `sin`/`cos` de
-  `janim.math` (no los de `math`, que difieren en el último bit
-  en ~3 % de las entradas); los rangos con `janim.math`
-  (`step_range`, `linear_range`); en numpy 2 `0.22 * array_float32` se queda
-  en float32, así que donde hace falta Float64 se sube a mano (03, 09: en la
-  03 no llega a mover un píxel a 360p, pero es la cuenta exacta); `x ** 2`
-  se escribe `x * x`; el `enumerate` empieza en 1 cuando el índice entra en
-  un ángulo (08); y un `lambda` dentro de un `for` ve solo la última vuelta
-  (05: se fabrica con una función).
+- **One disc per layer** (08). Within a layer, mobjects cover one another;
+  the blend mode acts between the entire layer and what lies below.
+  If all three discs shared one layer, `"add"` would add nothing.
+- **The mask is not drawn; the rim is** (03, 07). The clipping shape is
+  filled white and belongs to no content layer; the visible border is
+  ANOTHER stroke-only mobject in a layer above.
+- **A star's bounding-box center is not its center** (03). `rotate`
+  pivots around `get_center()` (the box), which on a five-pointed star
+  is 0.2 units above the real center: the star orbited instead of
+  spinning. Placing and rotating it around `get_real_center_of_mass()`
+  (the exact centroid) fixes this. And because `window=` places the
+  image in the mobject's BOX, a rotating star would wobble the image by
+  ±0.2 units: that layer's window is an invisible fixed square, and the
+  star is only the mask.
+- **A tail matching the stroke is invisible** (03). A yellow
+  `TracingTail` over the gradient rosette disappeared when crossing
+  the yellow lobe; a thicker white tail reads clearly in all three views.
+- **Two animations on the same mobject overwrite each other** (07).
+  Each writes the entire state, so simultaneous `FadeOut` and
+  `.animate` on the rim left it stationary. A single `.animate` with
+  two chained operations
+  (`.scale(90.0, about_point=anchor).set_stroke(opacity=0.0)`) does both.
+- **σ has an honest ceiling**: 0.23 units at 720p (21 px). Demo 05's
+  `Dof` therefore uses `max_sigma=0.23`; requesting 3.0 only produces
+  the warning above and a truncated blur.
+- **A truncated Bloom makes SQUARE halos** (02). The pyramid's 4σ level
+  with `sigma=0.16` requested 58 px, and the kernel cut it at ±63:
+  a truncated Gaussian is almost a box, and a separable H+V box around
+  a bright point is a square. It is unnoticeable on a long stroke,
+  but obvious on the bob. Two-part fix: `sigma=0.055` (all three
+  levels fit) and a `GlowDot` behind the bob, a round per-fragment
+  halo independent of the kernel.
+- **The initial state already drawn** (02). Rod, bobs and spotlight
+  are placed at the initial state's positions BEFORE starting the
+  integrator: nothing starts at the origin and jumps a frame later.
+- **There is no motion blur in the render loop** (04, 10, 12).
+  `Scene` has no `motion_blur` kwarg, and the CLI rejects
+  `--motion-blur` by name (exit 2). Scenes render without it;
+  the animation is the same.
+- **`render_frame_motion` does not show true motion blur**: it renders
+  the frame containing each sub-exposure, and because the shutter
+  window (`shutter / fps`) is shorter than a frame, it averages at most
+  TWO distinct frames — two copies, not a trail. Measured in demo 10
+  at t = 4 s:
+  `render_frame_motion(MotionBlur, 4.0, n=8, shutter=0.5, fps=30)`
+  shows each particle twice. To truly sample a 180° shutter at 30 fps,
+  supply a finer clock and open the shutter proportionally:
+  `render_frame_motion(MotionBlur, 4.0, n=8, shutter=4.0, fps=240)`
+  distributes the eight sub-exposures over four 1/240 s frames and
+  produces a trail. This only applies to scenes whose state is a
+  function of time (10, 12): an integrator advancing with `dt` (02, 04)
+  simulates SOMETHING ELSE at a different fps.
+- **Python numerical details** handled carefully so frames always match:
+  `sin`/`cos` from `janim.math` (not `math`, which differs in the
+  last bit for ~3% of inputs); ranges from `janim.math`
+  (`step_range`, `linear_range`); in numpy 2,
+  `0.22 * array_float32` remains float32, so values are explicitly
+  promoted where Float64 is needed (03, 09: in 03 this does not move
+  a pixel at 360p, but it is the exact calculation); `x ** 2` is
+  written `x * x`; `enumerate` starts at 1 when the index enters an
+  angle (08); and a `lambda` inside a `for` sees only the last
+  iteration (05: it is created with a function).

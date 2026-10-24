@@ -1,22 +1,22 @@
-"""Demo 09 · EL REFLEJO — un título sobre el agua, con ondas de verdad
+"""Demo 09 · THE REFLECTION — a title over water, with real ripples
 
-El reflejo es una copia volteada del título y de la luna en una capa propia,
-y esa capa lleva cuatro cosas que Manim no puede darle:
+The reflection is a flipped copy of the title and moon in its own layer,
+and that layer has four things Manim cannot give it:
 
-  · `Wave` con la fase animada desde un updater: las uv se desplazan con un
-    seno que viaja — el agua se mueve, y el reflejo con ella;
-  · `Blur`, porque un reflejo nunca es tan nítido como el original;
-  · `opacity` de capa, para atenuarlo entero de una vez;
-  · una `Mask` con `feather` grande: la cobertura cae suavemente hacia el
-    fondo, que es como se apaga un reflejo con la distancia.
+  · `Wave` with phase animated from an updater: UVs shift with a traveling
+    sine wave — the water moves, and the reflection moves with it;
+  · `Blur`, because a reflection is never as sharp as the original;
+  · layer `opacity`, to dim the whole reflection at once;
+  · a `Mask` with a large `feather`: coverage falls smoothly toward the
+    bottom, just as a reflection fades with distance.
 
-La luna y las estrellas van en una capa `"add"` con `Bloom` (el glow del
-cielo), y un `Vignette` en una capa de ajuste cierra el plano. La luna sube
-por updater y su reflejo baja: dos mobjects, un solo movimiento.
+The moon and stars live in an `"add"` layer with `Bloom` (the sky's glow),
+and a `Vignette` on an adjustment layer closes the shot. An updater raises
+the moon while its reflection sinks: two mobjects, one movement.
 
-En `mirror` y en las estrellas reflejadas la cuenta `2 * WATERLINE - y` se
-hace con `float(y)`: en numpy 2, `float - np.float32` se quedaría en float32
-y aquí hace falta Float64.
+In `mirror` and the reflected stars, `2 * WATERLINE - y` is computed with
+`float(y)`: in numpy 2, `float - np.float32` would remain float32,
+and Float64 is needed here.
 
     bin/janim render examples/demo/09_reflection.py -ql
 """
@@ -32,7 +32,7 @@ WATERLINE = -0.2
 
 
 def mirror(m):
-    """La copia especular de `m` respecto a la línea del agua."""
+    """The mirror copy of `m` across the waterline."""
     r = m.copy()
     r.flip(axis=RIGHT)
     c = m.get_center()
@@ -41,13 +41,13 @@ def mirror(m):
 
 
 def frac(x):
-    """Parte fraccionaria: la secuencia R2 (Roberts) reparte las estrellas sin filas."""
+    """Fractional part: the R2 (Roberts) sequence distributes stars without rows."""
     return x - math.floor(x)
 
 
 class Reflection(Scene):
     def construct(self):
-        # ── el cielo ─────────────────────────────────────────────────────
+        # ── the sky ─────────────────────────────────────────────────────
         title = Text("Janim", font="DejaVu Sans", size=1.7)
         title.set_fill_by_gradient("#FFF1C1", "#FFB36B")
         title.move_to((0, WATERLINE + 0.95, 0))
@@ -75,7 +75,7 @@ class Reflection(Scene):
             glow_factor=1.5,
         )
 
-        # ── el agua y los reflejos ───────────────────────────────────────
+        # ── the water and reflections ───────────────────────────────────────
         water = Rectangle(width=16.0, height=4.0)
         water.set_fill("#04081A", opacity=1.0)
         water.set_stroke(opacity=0)
@@ -90,7 +90,7 @@ class Reflection(Scene):
             glow_factor=1.5,
         )
 
-        # la cobertura del reflejo: 1 junto a la orilla, y cae con la distancia
+        # reflection coverage: 1 at the shore, decreasing with distance
         fade = Rectangle(width=16.0, height=3.2)
         fade.set_fill(WHITE, opacity=1.0)
         fade.set_stroke(opacity=0)
@@ -134,7 +134,7 @@ class Reflection(Scene):
             ),
         )
 
-        # el agua se mueve y la luna sube (su reflejo, baja)
+        # the water moves and the moon rises (its reflection sinks)
         def tide(m, dt):
             if not dt > 0:
                 return

@@ -269,4 +269,4 @@ the shape zoo.
 - `../../README.md` — the overview of the project (`../../README.es.md` in Spanish).
 - `../../docs/` — the compositor, 3D and the CLI.
 - `../gallery/`, `../scenes/` — complete scenes written as Manim classes.
-- `../demo/` — twelve short demonstrations of what only Janim does (in Spanish).
+- `../demo/` — twelve short demonstrations of what only Janim does, with English comments and the Spanish originals in `*.es.py`.

@@ -1,25 +1,24 @@
-"""Demo 01 · CUATRO CÁMARAS, UN MUNDO — la multicámara 3D
+"""Demo 01 · FOUR CAMERAS, ONE WORLD — 3D multicamera
 
-El panel clásico de un editor 3D, hecho con la primitiva del compositor:
-CUATRO capas que comparten la MISMA lista de mobjects, cada una con su
-`CameraFrame` (`camera=`) y su rectángulo en pantalla (`window=`). No hay
-copias ni proyecciones falsas: cada vista es un render de verdad, con su
-z-buffer PROPIO — el satélite que enhebra el toro se esconde detrás del tubo
-en unas vistas mientras sigue visible en otras, que es exactamente lo que una
-copia escalada no puede hacer.
+The classic 3D editor panel, built with the compositor primitive:
+FOUR layers sharing the SAME list of mobjects, each with its own
+`CameraFrame` (`camera=`) and on-screen rectangle (`window=`). No copies
+or fake projections: each view is a real render with its OWN z-buffer —
+the satellite threading the torus hides behind the tube in some views
+while remaining visible in others, exactly what a scaled copy cannot do.
 
-Por qué esto no se puede hacer en Manim: su cámara es UNA y dibuja al
-framebuffer final. CE tiene `ZoomedScene` (una segunda cámara con un display
-fijo) y nada más; GL ni eso. Aquí una cámara es un kwarg de la capa.
+Why this cannot be done in Manim: it has ONE camera drawing to the final
+framebuffer. CE has `ZoomedScene` (a second camera with a fixed display)
+and nothing more; GL does not even have that. Here a camera is a layer kwarg.
 
-Dos reglas que este fichero enseña:
-  · el mundo puede estar en las cuatro capas a la vez: los updaters corren
-    UNA sola vez por frame (la lista viva se deduplica por identidad);
-  · una ventana con la MISMA forma que el frame de su cámara (16:9 aquí)
-    muestra la vista entera de esa cámara, sin recorte que adivinar.
+Two rules this file teaches:
+  · the world can be in all four layers at once: updaters run only ONCE
+    per frame (the live list is deduplicated by identity);
+  · a window with the SAME shape as its camera frame (16:9 here)
+    shows that camera's entire view, with no crop to guess.
 
-La misma escena está en `examples/scenes/multicam_scenes.py:MulticamScene`.
-El estado mutable de los updaters son listas de un elemento.
+The same scene lives in `examples/scenes/multicam_scenes.py:MulticamScene`.
+Mutable updater state is held in single-element lists.
 
     bin/janim render examples/demo/01_multicam.py -ql
 """
@@ -34,7 +33,7 @@ from janim.math import cos, sin
 
 class Multicam(Scene):
     def construct(self):
-        # ── el mundo: un toro, sus ejes, y un satélite que lo enhebra ──────
+        # ── the world: a torus, its axes, and a satellite threading it ──────
         torus = Torus(
             r1=2.0,
             r2=0.55,
@@ -72,7 +71,7 @@ class Multicam(Scene):
 
         world = [torus, axes, sat]
 
-        # ── cuatro cámaras sobre ese mundo ─────────────────────────────────
+        # ── four cameras on that world ─────────────────────────────────
         cam_top = CameraFrame()
         cam_top.set_frame_height(7.0)
 
@@ -95,7 +94,7 @@ class Multicam(Scene):
 
         cam_persp.add_updater(swing)
 
-        # ── el panel: cuatro ventanas 16:9 que tejen el cuadro ─────────────
+        # ── the panel: four 16:9 windows tiling the frame ─────────────
         def win(x, y):
             r = Rectangle(
                 width=6.91,
@@ -135,9 +134,9 @@ class Multicam(Scene):
             ),
         )
 
-        # Todo el movimiento es de updaters: dos vueltas del satélite mientras
-        # la perspectiva se mece. Las otras tres vistas ni se enteran — cada
-        # cámara es suya.
+        # All motion comes from updaters: two satellite orbits while the
+        # perspective sways. The other three views are unaffected — each
+        # has its own camera.
         self.wait(14.0)
 
 

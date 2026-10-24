@@ -24,9 +24,9 @@ def double_pendulum(du, u, p, t):
 
 class PendulumTrail(Scene):
     def construct(self):
-        title = Text("La misma estela, unida de dos maneras", size=0.55)
+        title = Text("The same trail, joined two ways", size=0.55)
         title.to_edge(UP, buff=0.3)
-        left = Text("poligonal", size=0.42, color="#8894A6")
+        left = Text("polygonal", size=0.42, color="#8894A6")
         right = Text("make_smooth!", size=0.42, color="#58C4DD")
         left.move_to((-3.0, -3.15, 0))
         right.move_to((3.0, -3.15, 0))

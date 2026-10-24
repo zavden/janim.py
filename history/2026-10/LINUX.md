@@ -1,207 +1,208 @@
-# Janim (Python) en Linux · confirmar que el port a Windows no lo cambió · sugerencias para el agente
+# Janim (Python) on Linux · confirming the Windows port left it unchanged · suggestions for the agent
 
-Escrito el 2026-10-22 en el Windows 11 donde se acaba de terminar el port a
-Windows (`WINDOWS.md`, apartado «Resultado»), **sin probar nada en Linux**
-desde entonces. La regla del port era que Linux y macOS no cambiaran: todo lo
-de Windows va tras `sys.platform == "win32"`, y el código que corre y los
-frames que salen en Linux deben ser los mismos que antes. Este fichero dice
-dónde mirar para confirmarlo, qué quedó sin probar en Linux (las líneas de
-instalación del README) y qué anotar. Lo que pude comprobar desde aquí (el
-diff, las fuentes de las bibliotecas) lleva la marca «comprobado». Si algo
-resulta falso, corrígelo en este fichero y di que lo estaba.
+Written on 2026-10-22 on the Windows 11 machine where the Windows port has
+just been completed (`WINDOWS.md`, “Results” section), **without testing
+anything on Linux** since then. The port's rule was that Linux and macOS
+must remain unchanged: all Windows code goes behind `sys.platform == "win32"`,
+and the code executed and frames produced on Linux must match those from
+before. This file says where to look to confirm that, what remains untested
+on Linux (the README installation commands), and what to record. What I
+could check from here (the diff, library sources) is marked “verified”.
+If anything proves false, correct it here and say that it was false.
 
-El repo hermano, Janim.jl, tiene su propio `LINUX.md`. Las dos bibliotecas
-comparten los shaders WGSL, y el único shader común que cambió es el mismo en
-las dos (§2). Los arneses de comparación están en el `MACOS.md` de Janim.jl,
-§6.
+The sibling repo, Janim.jl, has its own `LINUX.md`. Both libraries share
+WGSL shaders, and the only shared shader that changed is the same in both
+(§2). Comparison harnesses are in Janim.jl's `MACOS.md`, §6.
 
-## Resultado · 2026-10-22, Fedora 44, Ryzen 7 9700X, Radeon RX 9070 XT (RADV, Mesa 26.2.5), Python 3.14.8, sway 1.11 (Wayland) + Xwayland
+## Results · 2026-10-22, Fedora 44, Ryzen 7 9700X, Radeon RX 9070 XT (RADV, Mesa 26.2.5), Python 3.14.8, sway 1.11 (Wayland) + Xwayland
 
-**Nada cambió en Linux.** Hechos el §1 (lo comprobable sin reinstalar
-Python), el §2, el §3, el §4 y el §5 entre `ce98cf2` y `main`
-(`7f54aa3`), con dos clones limpios y un `scripts/bootstrap.sh` cada uno,
-el 2026-10-22.
+**Nothing changed on Linux.** Completed §1 (what could be checked without
+reinstalling Python), §2, §3, §4 and §5 between `ce98cf2` and `main`
+(`7f54aa3`), with two clean clones and one `scripts/bootstrap.sh` run each,
+on 2026-10-22.
 
-- **§1 · Instalar.** Los once paquetes de la línea `dnf` del README existen
-  en los repositorios de Fedora 44 (`dnf repoquery`). Los de la línea `apt`
-  existen en Debian (`packages.debian.org`), pero `python3.14` solo en
-  `forky`/`sid`, no en Debian 13 (`trixie`); Ubuntu 26.04 (`resolute`) lo
-  tiene: la nota de `uv` del README cubre el hueco. Las lecciones `03_text`,
-  `05_physics_warning` y `06_cli_and_farm` piden Liberation Serif y Mono,
-  que el README nombra pero las líneas `dnf`/`apt` no (`liberation-fonts`,
-  `fonts-liberation`); aquí estaban instaladas. `bootstrap.sh` →
-  `bootstrap.py`: el `pip list` de los dos venv es idéntico (cffi 2.1.1,
-  freetype-py 2.5.1, glfw 2.10.2, numpy 2.4.6, pycparser 3.0, sniffio
-  1.3.1, wgpu 0.21.0; `rubicon-objc` saltado por su marcador).
-- **§2 · Frames, byte a byte.** Las 134 clases `Scene` de `examples/`:
-  **134 renders, 8 544 frames, idénticos** antes y después a 640×360 y 10
-  fps en RADV (un SHA-256 por frame por `frame_tap`, un proceso por render).
-  La `06_broadcast` (`BroadcastScene`), la del CRT, da los mismos 198
-  frames. Python contra Julia (Janim.jl en `main`): `01`, `03`, `04`, `07`,
-  `11` idénticas como en Windows, y también `10` (90 frames) y `12` (66;
-  aquí Fredoka está instalada); `02`, `05`, `06`, `08` y `09` difieren, como
-  ya diferían antes del port (`MACOS.md` de Janim.jl, §6).
-- **§3 · El código común.** `gpu_info()` da `radv`, `vulkan`, `Mesa
-  26.2.5`, `discrete`; con `JANIM_HEADLESS=1`, llvmpipe y `cpu`. `import
-  janim` carga; `_BACKEND_TYPES["DX12"]` existe en Linux (4). GLFW: sin
-  `DISPLAY` ni `WAYLAND_DISPLAY` → `null`; con `JANIM_HEADLESS=1` → `null`;
-  `JANIM_GLFW_PLATFORM=win32` o `cocoa` → «expected null, wayland or x11».
-  `video.py`: `03_portals` a `-ql` (210 frames) y con `-j 2` (140) dan el
-  mismo número de frames y los mismos frames decodificados (`framemd5`)
-  antes y después. Las nueve lecturas con `encoding="utf-8"`: los shaders
-  (cualquier render), `Tex` (la lección LaTeX) y la granja (`-j 2`) pasan.
-  Las fuentes: `03_text` encuentra DejaVu y Liberation.
-- **§4 · CLI y ventana.** `-p` llama a `xdg-open` (stub) con la ruta
-  correcta; `-j 2`; `-t`; `-s --to 40 --out_dir`; `frame 60`; la lección
-  LaTeX; el multi-escena `:Intro`; `ping` y `check` sin daemon. La ventana:
-  `live()` en Wayland y en X11 (dos sesiones seguidas cada una, 81 y 89
-  frames en 3 s) y la de la CLI cerrada con Esc (frame 66).
-- **§5 · Tiempos.** Abajo, junto a los de Windows.
+- **§1 · Install.** All eleven packages in the README's `dnf` command exist
+  in Fedora 44 repositories (`dnf repoquery`). Those in the `apt` command
+  exist in Debian (`packages.debian.org`), but `python3.14` is only in
+  `forky`/`sid`, not Debian 13 (`trixie`); Ubuntu 26.04 (`resolute`) has
+  it: the README's `uv` note covers that gap. Lessons `03_text`,
+  `05_physics_warning` and `06_cli_and_farm` require Liberation Serif and
+  Mono, which the README names but the `dnf`/`apt` commands omit
+  (`liberation-fonts`, `fonts-liberation`); they were installed here.
+  `bootstrap.sh` → `bootstrap.py`: both venvs have identical `pip list`
+  output (cffi 2.1.1, freetype-py 2.5.1, glfw 2.10.2, numpy 2.4.6,
+  pycparser 3.0, sniffio 1.3.1, wgpu 0.21.0; `rubicon-objc` skipped by its marker).
+- **§2 · Frames, byte for byte.** All 134 `Scene` classes in `examples/`:
+  **134 renders, 8,544 frames, identical** before and after at 640×360 and
+  10 fps on RADV (one SHA-256 per frame through `frame_tap`, one process
+  per render). `06_broadcast` (`BroadcastScene`), the CRT demo, gives the
+  same 198 frames. Python versus Julia (Janim.jl on `main`): `01`, `03`,
+  `04`, `07`, `11` match as on Windows, as do `10` (90 frames) and
+  `12` (66; Fredoka is installed here); `02`, `05`, `06`, `08` and
+  `09` differ, as they already did before the port (Janim.jl's `MACOS.md`, §6).
+- **§3 · Shared code.** `gpu_info()` reports `radv`, `vulkan`, `Mesa
+  26.2.5`, `discrete`; with `JANIM_HEADLESS=1`, llvmpipe and `cpu`.
+  `import janim` loads; `_BACKEND_TYPES["DX12"]` exists on Linux (4).
+  GLFW: without `DISPLAY` or `WAYLAND_DISPLAY` → `null`; with
+  `JANIM_HEADLESS=1` → `null`; `JANIM_GLFW_PLATFORM=win32` or `cocoa`
+  → “expected null, wayland or x11”. `video.py`: `03_portals` at `-ql`
+  (210 frames) and with `-j 2` (140) give the same frame counts and decoded
+  frames (`framemd5`) before and after. The nine reads with
+  `encoding="utf-8"`: shaders (any render), `Tex` (the LaTeX lesson) and
+  the farm (`-j 2`) pass. Fonts: `03_text` finds DejaVu and Liberation.
+- **§4 · CLI and window.** `-p` calls `xdg-open` (stub) with the correct
+  path; `-j 2`; `-t`; `-s --to 40 --out_dir`; `frame 60`; the LaTeX
+  lesson; multi-scene `:Intro`; `ping` and `check` without a daemon.
+  The window: `live()` on Wayland and X11 (two consecutive sessions each,
+  81 and 89 frames in 3 s), and the CLI window closed with Esc (frame 66).
+- **§5 · Timings.** Below, alongside Windows.
 
-### §5 · Tiempos a 1920×1080 y 60 fps, Linux junto a Windows
+### §5 · Timings at 1920×1080 and 60 fps, Linux alongside Windows
 
 Linux: Fedora 44, Ryzen 7 9700X, Radeon RX 9070 XT (RADV, Mesa 26.2.5),
-`main` en `7f54aa3`, un render cada vez, reloj de pared del proceso entero
-(`bin/janim render … -r 1920x1080 --fps 60`; Python arranca en ~1 s), el
-2026-10-22. Windows: la tabla de §5. La 12 aquí sí
-sale: Fredoka está instalada.
+`main` at `7f54aa3`, one render at a time, wall-clock time for the whole
+process (`bin/janim render … -r 1920x1080 --fps 60`; Python starts in
+~1 s), on 2026-10-22. Windows: the table in §5. Demo 12 renders here:
+Fredoka is installed.
 
 | demo | frames | Python Linux | Python Windows | Julia Linux | Julia Windows |
 |---|---:|---:|---:|---:|---:|
-| 01_multicam | 840 | 5,5 s | 7 s | 8,0 s | 10 s |
-| 02_pendulum_glow | 1356 | 9,5 s | 12 s | 15,1 s | 18 s |
-| 03_portals | 840 | 6,9 s | 8 s | 10,9 s | 13 s |
-| 04_lorenz_glow | 1080 | 25,2 s | 61 s | 14,5 s | 16 s |
-| 05_rack_focus | 756 | 5,3 s | 6 s | 9,0 s | 11 s |
-| 06_broadcast | 1188 | 8,1 s | 8 s | 10,7 s | 13 s |
-| 07_text_mask | 846 | 44,0 s | 51 s | 9,8 s | 12 s |
-| 08_light_vs_pigment | 708 | 5,0 s | 5 s | 8,5 s | 10 s |
-| 09_reflection | 768 | 5,7 s | 6 s | 9,6 s | 11 s |
-| 10_motion_blur | 540 | 3,9 s | 4 s | 7,4 s | 9 s |
-| 11_chase_camera | 1320 | 9,8 s | 12 s | 12,3 s | 15 s |
-| 12_motion_blur | 396 | 3,0 s | falla (fuente) | 5,8 s | falla (fuente) |
+| 01_multicam | 840 | 5.5 s | 7 s | 8.0 s | 10 s |
+| 02_pendulum_glow | 1356 | 9.5 s | 12 s | 15.1 s | 18 s |
+| 03_portals | 840 | 6.9 s | 8 s | 10.9 s | 13 s |
+| 04_lorenz_glow | 1080 | 25.2 s | 61 s | 14.5 s | 16 s |
+| 05_rack_focus | 756 | 5.3 s | 6 s | 9.0 s | 11 s |
+| 06_broadcast | 1188 | 8.1 s | 8 s | 10.7 s | 13 s |
+| 07_text_mask | 846 | 44.0 s | 51 s | 9.8 s | 12 s |
+| 08_light_vs_pigment | 708 | 5.0 s | 5 s | 8.5 s | 10 s |
+| 09_reflection | 768 | 5.7 s | 6 s | 9.6 s | 11 s |
+| 10_motion_blur | 540 | 3.9 s | 4 s | 7.4 s | 9 s |
+| 11_chase_camera | 1320 | 9.8 s | 12 s | 12.3 s | 15 s |
+| 12_motion_blur | 396 | 3.0 s | fails (font) | 5.8 s | fails (font) |
 
-Los recuentos de frames son los mismos que en Windows. A esta resolución,
-y a través de x264, los mp4 de Python y de Julia decodifican a los mismos
-frames (`ffmpeg -f framemd5`) en las siete demos que coinciden a 640×360
-(`01`, `03`, `04`, `07`, `10`, `11`, `12`); los otros cinco pares difieren,
-como abajo.
+Frame counts match Windows. At this resolution, through x264, Python and
+Julia mp4s decode to the same frames (`ffmpeg -f framemd5`) in the seven
+demos that match at 640×360 (`01`, `03`, `04`, `07`, `10`, `11`,
+`12`); the other five pairs differ, as below.
 
-## 0 · Reglas de trabajo
+## 0 · Working rules
 
-- **El objetivo** es confirmar que en Linux nada cambió: ni el código que
-  corre ni los frames. No es un port: si todo coincide, el trabajo es corto.
-- **El antes** es el commit `ce98cf2` («WINDOWS.md: sugerencias para portar
-  Janim a Windows 11»), el último `main` anterior al port; **el después** es
-  `main`. Los 14 commits entre los dos: `git log --oneline ce98cf2..main`.
-- **Windows y macOS no pueden cambiar** desde aquí: no hay máquina donde
-  probarlos. Si algo de Linux hay que arreglar, va tras una compuerta de
-  Linux, o fuera de toda compuerta solo si es idéntico en los tres.
-- **Commits solo con permiso de Alex, y nunca push.** Un commit por arreglo,
-  en español, que explique el porqué. Ninguna dependencia nueva sin preguntar.
-  Solo texto y SVG en git.
-- **No hay frames de referencia en el repo, pero aquí sí hay un antes:** el
-  mismo Linux, la misma GPU, el commit `ce98cf2`. La comparación es byte a
-  byte (§2), no a ojo.
-- **El orden que sugiero:** instalar desde cero con el README (§1), comparar
-  frames antes y después (§2), repasar el resto del código común (§3), la CLI
-  y la ventana (§4), y anotar tiempos (§5).
+- **The goal** is to confirm that nothing changed on Linux: neither the
+  executed code nor the frames. This is not a port: if everything matches,
+  the work is short.
+- **Before** is commit `ce98cf2` (“WINDOWS.md: suggestions for porting Janim
+  to Windows 11”), the last `main` before the port; **after** is `main`.
+  The 14 commits between them: `git log --oneline ce98cf2..main`.
+- **Windows and macOS must not change** from here: there is no machine to
+  test them. Any Linux fix goes behind a Linux guard, or outside all guards
+  only if it is identical on all three.
+- **Commits only with Alex's permission, and never push.** One commit per
+  fix, in Spanish, explaining why. No new dependency without asking.
+  Only text and SVG in git.
+- **There are no reference frames in the repo, but here there is a before:**
+  the same Linux, the same GPU, commit `ce98cf2`. Compare byte for byte (§2),
+  not by eye.
+- **Suggested order:** install from scratch with the README (§1), compare
+  frames before and after (§2), review the rest of the shared code (§3),
+  the CLI and window (§4), then record timings (§5).
 
-## 1 · Instalar desde cero: las líneas de Linux del README no se han probado
+## 1 · Install from scratch: the README's Linux commands have not been tested
 
-El README (`### Linux`) da `dnf` para Fedora 43 y `apt` para Debian/Ubuntu,
-escritos sin una máquina Linux delante: los nombres de paquete, sobre todo los
-de TeX Live (`texlive-standalone`, `texlive-preview`, `texlive-dvisvgm`) y
-`python3.14` en Debian, pueden no existir con ese nombre en la distribución
-que tengas. Sigue el README tal cual en un clon limpio, corrige las líneas
-que fallen (en los dos idiomas) y pasa el apartado «Check it / Comprobar» que
-viene tras las plataformas: `gpu_info()` debe decir `backend='vulkan'`.
+The README (`### Linux`) gives `dnf` commands for Fedora 43 and `apt` for
+Debian/Ubuntu, written without a Linux machine available: package names,
+especially TeX Live's (`texlive-standalone`, `texlive-preview`,
+`texlive-dvisvgm`) and `python3.14` on Debian, may not exist under those
+names on your distribution. Follow the README exactly in a clean clone,
+correct failing commands (in both languages), and run the “Check it”
+section after the platform instructions: `gpu_info()` should report
+`backend='vulkan'`.
 
-`scripts/bootstrap.sh` ya no lleva el Python dentro: llama a
-`scripts/bootstrap.py`, que es el heredoc de antes movido a un fichero para
-que `bootstrap.cmd` lo comparta (comprobado en el diff: mismo `pip install`,
-mismas opciones, mismo `janim.pth`). Compara `.venv/bin/pip list` con el de
-un venv hecho desde `ce98cf2`: deben coincidir.
+`scripts/bootstrap.sh` no longer embeds Python: it calls
+`scripts/bootstrap.py`, the old heredoc moved into a file so
+`bootstrap.cmd` can share it (verified in the diff: same `pip install`,
+same options, same `janim.pth`). Compare `.venv/bin/pip list` against a
+venv made from `ce98cf2`: they should match.
 
-## 2 · Frames: antes y después, byte a byte
+## 2 · Frames: before and after, byte for byte
 
-Lo único común que puede mover un píxel es
-`janim/backend/wgpu/shaders/effects.wgsl`, en `fs_crt`: `grille[col] = 1.0`
-(una escritura por índice dinámico, que el compilador de DX12 rechaza) pasó a
-un `select` con el mismo valor:
+The only shared change that can move a pixel is in
+`janim/backend/wgpu/shaders/effects.wgsl`, in `fs_crt`: `grille[col] = 1.0`
+(a write through a dynamic index, rejected by the DX12 compiler) became
+a `select` with the same value:
 
 ```wgsl
 let grille = select(vec3<f32>(1.0 - mask_depth * intensity), vec3<f32>(1.0),
                     vec3<bool>(col == 0, col == 1, col == 2));
 ```
 
-Lo demás común son lecturas con `encoding="utf-8"` (§3), que no tocan ningún
-frame. Aun así compara más de una demo: el arnés es barato.
+The other shared changes are reads with `encoding="utf-8"` (§3), which
+do not touch any frames. Still, compare more than one demo: the harness is cheap.
 
-Usa `tapf.py` del `MACOS.md` de Janim.jl, §6 (hashes SHA-256 por frame,
-640×360 a 10 fps, un render por proceso), guardado fuera del repo, con dos
-clones o un `git worktree add ../janim_py-antes ce98cf2` (con su propio
-`scripts/bootstrap.sh`). Para cada demo, una lista de hashes con cada
-checkout, y compáralas frame a frame:
+Use `tapf.py` from Janim.jl's `MACOS.md`, §6 (SHA-256 hashes per frame,
+640×360 at 10 fps, one render per process), saved outside the repo, with
+two clones or a `git worktree add ../janim_py-before ce98cf2` (with its
+own `scripts/bootstrap.sh`). For each demo, produce a list of hashes
+with each checkout and compare them frame by frame:
 
-- **`06_broadcast`** (clase `BroadcastScene`): es la del CRT, la única con un
-  motivo para cambiar. Debe dar la misma lista. Si no, mira el shader: el
-  `select` tiene que dar exactamente `1.0` en la franja `col` y
-  `1.0 - mask_depth * intensity` en las otras dos.
+- **`06_broadcast`** (class `BroadcastScene`): the CRT demo, the only one
+  with a reason to change. It must produce the same list. Otherwise,
+  inspect the shader: `select` must give exactly `1.0` in stripe `col`
+  and `1.0 - mask_depth * intensity` in the other two.
 - **`01_multicam`, `03_portals`, `04_lorenz_glow`, `07_text_mask`,
   `11_chase_camera`** (`Multicam`, `Portals`, `LorenzGlow`, `TextMask`,
-  `ChaseCamera`): las cinco que en Linux dan lo mismo en Python y en Julia;
-  sirven de control (no tocan el CRT) y, de paso, confirman que las dos
-  bibliotecas siguen coincidiendo entre sí tras el port (en Windows, con
-  DX12, las cinco siguieron coincidiendo byte a byte).
+  `ChaseCamera`): the five that match between Python and Julia on Linux;
+  they serve as controls (they do not touch CRT) and also confirm that both
+  libraries still match after the port (on Windows with DX12, all five
+  continued to match byte for byte).
 
-Una diferencia aquí es un fallo del port, no del driver: misma máquina, mismo
-driver, un proceso por render.
+A difference here is a porting bug, not a driver issue: same machine,
+same driver, one process per render.
 
-## 3 · El resto del código común, fichero por fichero
+## 3 · The rest of the shared code, file by file
 
-Todo esto está comprobado en el diff (`git diff ce98cf2..main -- janim
-scripts`); lo que hace falta en Linux es que corra.
+All of this is verified in the diff (`git diff ce98cf2..main -- janim
+scripts`); what remains on Linux is to run it.
 
-| fichero | cambio | qué comprobar en Linux |
+| file | change | what to check on Linux |
 |---|---|---|
-| `backend/wgpu/context.py` | `BACKEND = {"darwin": "Metal", "win32": "DX12"}.get(sys.platform, "Vulkan")` | `gpu_info()` dice `backend='vulkan'` |
-| `backend/wgpu/native.py` | `_INSTANCE_BACKENDS` y `_BACKEND_TYPES` ganan `DX12` (`lib.WGPUBackendType_D3D12`, una constante que la cabecera define en todas las plataformas: comprobado en `webgpu.h`) | que `import janim` cargue |
-| `backend/glfw.py` | `_headless_env` devuelve `False` para `("darwin", "win32")` en vez de solo `darwin`; `names` gana `glfw.PLATFORM_WIN32` (constante incondicional en pyGLFW 2.10.2, línea 648: comprobado); `native_handles` gana una rama `win32` tras la de `cocoa`, inalcanzable aquí | la ventana en vivo abre en Wayland y en X11; sin `DISPLAY` ni `WAYLAND_DISPLAY`, y con `JANIM_HEADLESS=1`, sigue saliendo `null` |
-| `backend/wgpu/window.py` | `create_window` acepta `"win32"` en su tupla; `PRESENT_WGSL` se lee como UTF-8 | lo mismo |
-| `video.py` | el `select.select` queda dentro de `if sys.platform != "win32"`, y el `except BlockingIOError` solo duerme en Windows; en Linux, las mismas líneas de antes | un render largo y uno con `-j 2`; el mismo número de frames que antes (`ffprobe`) |
-| `cli.py` | `open_output` empieza con una rama `win32` (`os.startfile`) y `main` con otra (stdout en UTF-8); el resto, idéntico | `-p` abre con `xdg-open` |
-| `text/glyphs.py` | `_font_catalog` gana una rama `elif sys.platform == "win32"` | DejaVu y Liberation se encuentran igual |
-| nueve `read_text`/`write_text` con `encoding="utf-8"`: `pipelines.py:29,35`, `compositor.py:49`, `triangle.py:12`, `window.py:22`, `core/model.py:41,83`, `scene/scene.py:807`, `text/tex.py:111` y siguientes | sin `encoding`, Windows leía cp1252 y moría en el primer carácter no latino; en Linux el locale ya era UTF-8, así que son los mismos bytes | los shaders (cualquier render), un modelo (`core/model.py`), `Tex`, la granja (`scene.py:807` escribe la lista de ffmpeg) |
+| `backend/wgpu/context.py` | `BACKEND = {"darwin": "Metal", "win32": "DX12"}.get(sys.platform, "Vulkan")` | `gpu_info()` says `backend='vulkan'` |
+| `backend/wgpu/native.py` | `_INSTANCE_BACKENDS` and `_BACKEND_TYPES` gain `DX12` (`lib.WGPUBackendType_D3D12`, a constant the header defines on all platforms: verified in `webgpu.h`) | `import janim` loads |
+| `backend/glfw.py` | `_headless_env` returns `False` for `("darwin", "win32")` instead of only `darwin`; `names` gains `glfw.PLATFORM_WIN32` (an unconditional constant in pyGLFW 2.10.2, line 648: verified); `native_handles` gains a `win32` branch after `cocoa`, unreachable here | the live window opens on Wayland and X11; without `DISPLAY` or `WAYLAND_DISPLAY`, and with `JANIM_HEADLESS=1`, the result is still `null` |
+| `backend/wgpu/window.py` | `create_window` accepts `"win32"` in its tuple; `PRESENT_WGSL` is read as UTF-8 | same as above |
+| `video.py` | `select.select` is inside `if sys.platform != "win32"`, and `except BlockingIOError` only sleeps on Windows; on Linux, the same lines as before | a long render and one with `-j 2`; same frame count as before (`ffprobe`) |
+| `cli.py` | `open_output` starts with a `win32` branch (`os.startfile`) and `main` with another (UTF-8 stdout); the rest is identical | `-p` opens with `xdg-open` |
+| `text/glyphs.py` | `_font_catalog` gains an `elif sys.platform == "win32"` branch | DejaVu and Liberation are found as before |
+| nine `read_text`/`write_text` calls with `encoding="utf-8"`: `pipelines.py:29,35`, `compositor.py:49`, `triangle.py:12`, `window.py:22`, `core/model.py:41,83`, `scene/scene.py:807`, `text/tex.py:111` and following | without `encoding`, Windows read cp1252 and died at the first non-Latin character; on Linux the locale was already UTF-8, so the bytes are the same | shaders (any render), a model (`core/model.py`), `Tex`, the farm (`scene.py:807` writes the ffmpeg list) |
 | `scripts/bootstrap.sh` → `scripts/bootstrap.py` | §1 | §1 |
-| `.gitattributes`, `bin/janim.cmd`, `scripts/bootstrap.cmd` | ficheros para Windows; en Linux los `*.cmd` salen con CRLF a propósito | nada |
-| `README*.md`, `llms.txt`, `WINDOWS.md` | documentación | las líneas de Linux (§1) |
+| `.gitattributes`, `bin/janim.cmd`, `scripts/bootstrap.cmd` | Windows files; on Linux, `*.cmd` deliberately use CRLF | nothing |
+| `README*.md`, `llms.txt`, `WINDOWS.md` | documentation | Linux commands (§1) |
 
-`bin/janim` (bash) no cambió. Si tienes un Linux sin locale UTF-8 (`LANG=C`),
-las lecturas con `encoding` explícito son justo lo que lo hace funcionar ahí
-también; antes dependía del locale.
+`bin/janim` (bash) did not change. On Linux without a UTF-8 locale
+(`LANG=C`), the reads with explicit `encoding` are precisely what makes
+it work there too; previously it depended on the locale.
 
-## 4 · La CLI y la ventana
+## 4 · The CLI and window
 
-Nada de esto cambió en Linux, así que es una pasada, no una búsqueda:
+None of this changed on Linux, so this is a pass through the checks,
+not an investigation:
 
 ```bash
-bin/janim render examples/demo/03_portals.py -ql -p          # xdg-open al terminar
+bin/janim render examples/demo/03_portals.py -ql -p          # xdg-open when finished
 bin/janim render examples/demo/03_portals.py -qs -j 2 -o /tmp/farm.mp4
 bin/janim render examples/demo/03_portals.py -qs -t -o /tmp/alpha.mov
 bin/janim render examples/demo/03_portals.py -s --to 40 -ql --out_dir /tmp/stills
 bin/janim frame  examples/demo/03_portals.py 60 /tmp/f.png -ql
-bin/janim examples/demo/03_portals.py                        # la ventana: teclas, ratón, Esc
+bin/janim examples/demo/03_portals.py                        # window: keys, mouse, Esc
 ```
 
-La ventana, en Wayland y en X11 si la máquina tiene los dos
-(`JANIM_GLFW_PLATFORM`, si existe esa variable, o la sesión que toque).
+Test the window on Wayland and X11 if the machine has both
+(`JANIM_GLFW_PLATFORM`, if that variable exists, or the appropriate session).
 
-## 5 · Tiempos, para comparar con Windows
+## 5 · Timings, for comparison with Windows
 
-En Windows (Ryzen 7 9700X, Radeon RX 9070 XT, DX12, driver 32.0.32015.7029),
-un render cada vez, tiempo de reloj del proceso entero (Python arranca en
-~1 s; Julia, 4–5 s), medido el 2026-10-21 con `main` en `2a2f079`:
+On Windows (Ryzen 7 9700X, Radeon RX 9070 XT, DX12, driver 32.0.32015.7029),
+one render at a time, wall-clock time for the whole process (Python starts
+in ~1 s; Julia, 4–5 s), measured on 2026-10-21 with `main` at `2a2f079`:
 
 | demo | frames | 1080p60 Python | 1080p60 Julia | 720p60 Python | 720p60 Julia |
 |---|---:|---:|---:|---:|---:|
@@ -216,31 +217,31 @@ un render cada vez, tiempo de reloj del proceso entero (Python arranca en
 | 09_reflection | 768 | 6 s | 11 s | 4 s | 9 s |
 | 10_motion_blur | 540 | 4 s | 9 s | 2 s | 7 s |
 | 11_chase_camera | 1320 | 12 s | 15 s | 8 s | 11 s |
-| 12_motion_blur | — | falla | falla | falla | falla |
+| 12_motion_blur | — | fails | fails | fails | fails |
 
-La 04 y la 07 de Python van por la CPU (numpy), no por la GPU: su tiempo
-apenas cambia con la resolución. La 12 pide la fuente «Fredoka Expanded»,
-que no estaba instalada. Para repetirlo aquí, en el mismo orden y nunca dos a
-la vez:
+Python's demos 04 and 07 are CPU-bound (numpy), not GPU-bound: their
+timings barely change with resolution. Demo 12 needs “Fredoka Expanded”,
+which was not installed. To repeat here, in the same order and never
+two at once:
 
 ```bash
 time bin/janim render examples/demo/01_multicam.py -r 1920x1080 --fps 60 -o /tmp/01.mp4
 ```
 
-Anota la GPU, el driver de Mesa y los tiempos al principio de este fichero,
-junto con el resultado del §2.
+Record the GPU, Mesa driver and timings at the start of this file,
+alongside the result of §2.
 
-## 6 · Lo que no es un problema de Linux
+## 6 · What is not a Linux problem
 
-- `12_motion_blur` falla por la fuente «Fredoka Expanded»; Alex dijo que se
-  ignore, como el desenfoque de movimiento (`04`, `10`, `12`).
-- Todo lo que está tras `sys.platform == "win32"`, `bin\janim.cmd` y
-  `scripts\bootstrap.cmd`: no se puede probar aquí y no hay que tocarlo.
+- `12_motion_blur` fails because of the “Fredoka Expanded” font; Alex said
+  to ignore it, as with motion blur (`04`, `10`, `12`).
+- Everything behind `sys.platform == "win32"`, `bin\janim.cmd` and
+  `scripts\bootstrap.cmd`: it cannot be tested here and should not be touched.
 
-## 7 · Al terminar
+## 7 · When finished
 
-Deja aquí, al principio de este fichero, una sección «Resultado» con la
-distribución, la GPU, el driver, lo que coincidió y lo que no (como hacen
-`MACOS.md` y `WINDOWS.md`). Si las líneas de Linux del README cambiaron, di
-cuáles. Si todo coincide, el port está cerrado en las tres plataformas y Alex
-decide el push.
+Add a “Results” section at the start of this file with the distribution,
+GPU, driver, what matched and what did not (as in `MACOS.md` and
+`WINDOWS.md`). If the README's Linux commands changed, say which ones.
+If everything matches, the port is complete on all three platforms and
+Alex decides whether to push.

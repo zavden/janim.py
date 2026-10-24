@@ -1,25 +1,25 @@
-"""Demo 06 · LA EMISIÓN — glitch, tubo de rayos catódicos y cinta VHS sobre una
-fórmula que sigue morfando debajo
+"""Demo 06 · THE BROADCAST — glitch, cathode-ray tube and VHS tape over a
+formula that keeps morphing underneath
 
-Los efectos de editor (`Glitch`, `CRT`, `VHS`, `ColorAdjust`) van en la
-lista `effects` de UNA capa, y cada uno es un dataclass mutable: animarlos es
-escribir en sus campos desde un updater. Tres propiedades que hacen que esto
-sea usable y no un truco:
+Editor effects (`Glitch`, `CRT`, `VHS`, `ColorAdjust`) go in ONE layer's
+`effects` list, and each is a mutable dataclass: animating them means
+writing their fields from an updater. Three properties make this usable
+rather than a trick:
 
-  · el CERO de cada dial es un no-op EXACTO: la pasada se salta, y la imagen
-    vuelve limpia byte a byte cuando la interferencia termina;
-  · la aleatoriedad es un hash de (píxel, frame, semilla), nunca `random()`:
-    el mismo glitch sale en el mismo frame en cada render, y se puede
-    rebobinar hasta él;
-  · `CRT.roll` no tiene reloj interno: la televisión pierde el sincronismo
-    porque TÚ escribes el desplazamiento cada frame.
+  · each dial's ZERO is an EXACT no-op: the pass is skipped, and the image
+    returns clean, byte for byte, when the interference ends;
+  · randomness is a hash of (pixel, frame, seed), never `random()`:
+    the same glitch appears on the same frame in every render, and you
+    can rewind to it;
+  · `CRT.roll` has no internal clock: the television loses sync because
+    YOU write its offset every frame.
 
-Manim no tiene post-proceso de ningún tipo — ni siquiera un blur.
+Manim has no post-processing of any kind — not even blur.
 
-El hash del ruido es `janim.core.effects_types._noise_hash`. La clase se
-llama `BroadcastScene` y no `Broadcast` porque `Broadcast` ya es una
-animación de janim (la de ManimGL) y `from janim import *` la trae: el
-nombre la taparía.
+The noise hash is `janim.core.effects_types._noise_hash`. The class is
+named `BroadcastScene`, not `Broadcast`, because `Broadcast` is already
+a janim animation (ManimGL's), imported by `from janim import *`:
+the name would shadow it.
 
     bin/janim render examples/demo/06_broadcast.py -ql
 """
@@ -32,13 +32,13 @@ from janim.core.effects_types import _noise_hash
 
 
 def ramp(t, t0, t1):
-    """0 antes de t0, 1 después de t1, y una recta entre medias."""
+    """0 before t0, 1 after t1, and a straight line in between."""
     return min(max((t - t0) / (t1 - t0), 0.0), 1.0)
 
 
 class BroadcastScene(Scene):
     def construct(self):
-        # ── el monitor: barras de color, la fórmula y los rótulos del canal ─
+        # ── the monitor: color bars, the formula and channel labels ─
         bars = VGroup()
         for k, c in enumerate(("#FFFFFF", "#FFFF00", "#00FFFF", "#00FF00", "#FF00FF", "#FF0000", "#0000FF")):
             r = Rectangle(width=1.6, height=0.8)
@@ -66,7 +66,7 @@ class BroadcastScene(Scene):
 
         status = make_status("SIGNAL", GREY_B)
 
-        # ── los efectos, todos apagados: cero = pasada saltada ──────────────
+        # ── the effects, all off: zero = skipped pass ──────────────
         glitch = Glitch(
             intensity=0.0,
             seed=7,
@@ -94,15 +94,15 @@ class BroadcastScene(Scene):
             ),
         )
 
-        # ── el guion de la interferencia, como función de self.t ────────────
+        # ── the interference script, as a function of self.t ────────────
         def script(m, dt):
             if not dt > 0:
                 return
             t = self.t
 
-            # 1 · ráfagas (3–7 s): un pico, no una subida, y vuelta al cero
-            # exacto. Irregular pero determinista: el hash del propio motor
-            # sobre el frame.
+            # 1 · bursts (3–7 s): a spike, not a ramp, then back to exact
+            # zero. Irregular but deterministic: the engine's own hash
+            # applied to the frame.
             if 3.0 <= t < 7.0:
                 window = self.frames // 6
                 fire = float(_noise_hash(1, 1, window, 4)) > 0.5
@@ -111,14 +111,14 @@ class BroadcastScene(Scene):
             else:
                 glitch.intensity = 0.0
 
-            # 2 · el tubo (7–12.5 s): se enciende en medio segundo, pierde el
-            # sincronismo entre 8 y 11 s y se recupera solo.
+            # 2 · the tube (7–12.5 s): turns on in half a second, loses sync
+            # between 8 and 11 s, and recovers on its own.
             tube.intensity = ramp(t, 7.0, 7.5) * (1 - ramp(t, 12.5, 13.0))
             if 8.0 <= t < 11.0:
                 speed = 0.2 + 0.9 * max(0.0, sin(TAU * (t - 8.0) / 3.0))
                 tube.roll = (tube.roll + speed * dt) % 1.0
             elif tube.roll > 0.0:
-                # de vuelta al cuadro: por el lado más corto, y 1.0 ≡ 0.0
+                # back to the frame: along the shortest path, and 1.0 ≡ 0.0
                 if tube.roll < 0.5:
                     tube.roll = max(tube.roll - 1.2 * dt, 0.0)
                 else:
@@ -126,7 +126,7 @@ class BroadcastScene(Scene):
                 if tube.roll >= 1.0:
                     tube.roll = 0.0
 
-            # 3 · la cinta (13–17 s), con el color subido de saturación y contraste
+            # 3 · the tape (13–17 s), with increased color saturation and contrast
             tape.intensity = 0.8 * ramp(t, 13.0, 13.4) * (1 - ramp(t, 17.0, 17.6))
             grade.saturation = 1.0 + 0.35 * tape.intensity / 0.8
             grade.contrast = 1.0 + 0.15 * tape.intensity / 0.8
@@ -135,7 +135,7 @@ class BroadcastScene(Scene):
         clock.add_updater(script)
         self.add(clock)
 
-        # ── la fórmula sigue su curso debajo de todo ────────────────────────
+        # ── the formula continues underneath everything ────────────────────────
         self.play(Write(formula), run_time=2.0)
         self.wait(1.2)
         self.play(Transform(status, make_status("INTERFERENCE", "#FF3D8B")), run_time=0.4)
@@ -166,5 +166,5 @@ if __name__ == "__main__":
         output=str(here.with_suffix(".mp4")),
         fps=30,
         resolution=(1280, 720),
-        encoder_threads=1,      # ruido de alta frecuencia: mp4 reproducible byte a byte
+        encoder_threads=1,      # high-frequency noise: byte-reproducible mp4
     ).render()

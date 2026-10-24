@@ -75,7 +75,7 @@ class LorenzScene(Scene):
             project(m.get_points())
 
         dc.add_updater(flow)
-        title = Text("el atractor de Lorenz — 10⁶ partículas", size=0.4, color=GREY_A)
+        title = Text("the Lorenz attractor — 10⁶ particles", size=0.4, color=GREY_A)
         title.to_corner(UL, buff=0.35)
         title.fix_in_frame()
         self.use_composition(

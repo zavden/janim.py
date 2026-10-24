@@ -1,34 +1,34 @@
-"""Demo 11 · PERSECUCIÓN Y MINIMAPA — tres cámaras y un HUD fijo
+"""Demo 11 · CHASE AND MINIMAP — three cameras and a fixed HUD
 
-Un cometa recorre un nudo trébol atravesando tres puertas. En pantalla, tres
-vistas del MISMO mundo a la vez:
+A comet travels along a trefoil knot through three gates. On screen,
+three views of the SAME world at once:
 
-  · la principal, con la cámara de la escena orbitando por `animate`, en dos
-    tramos: 11 s y otros 10 siguiendo la vuelta,
-    para que el cometa complete dos pasadas por las puertas;
-  · CHASE: una capa cuya cámara persigue al cometa con un updater (`move_to`
-    al centro del cometa, cada frame) — el idiom que en CE pide un
-    `ZoomedScene`, aquí es un updater sobre un `CameraFrame`;
-  · TOP: un minimapa cenital en ventana CUADRADA — la ventana recorta la
-    vista de su cámara al mayor corte central con su aspecto, así que una
-    ventana cuadrada sobre una cámara 16:9 enseña el centro cuadrado.
+  · the main view, with the scene camera orbiting through `animate` in
+    two segments: 11 s and another 10 continuing around the orbit,
+    so the comet makes two passes through the gates;
+  · CHASE: a layer whose camera follows the comet with an updater
+    (`move_to` the comet's center, every frame) — the idiom that requires
+    a `ZoomedScene` in CE is an updater on a `CameraFrame` here;
+  · TOP: an overhead minimap in a SQUARE window — the window crops its
+    camera view to the largest central section with its aspect ratio,
+    so a square window on a 16:9 camera shows the central square.
 
-El HUD entero (marcos, etiquetas, leyenda) va con `fix_in_frame()`: la
-ventana de una capa se proyecta por la cámara del PADRE, y un mobject fijado
-a pantalla se queda quieto aunque la principal orbite — por eso los recuadros
-no derrapan durante el vuelo de cámara.
+The entire HUD (frames, labels, caption) uses `fix_in_frame()`: a layer's
+window is projected by the PARENT's camera, and a screen-fixed mobject
+stays still even when the main camera orbits — this is why the boxes
+do not drift during the camera flight.
 
-La estela es UNA `TracedPath` compartida por las tres capas: la lista de
-updaters se deduplica por identidad, así que registra un punto por
-frame, no tres.
+The trail is ONE `TracedPath` shared by all three layers: the updater
+list is deduplicated by identity, so it records one point per frame,
+not three.
 
-La misma escena, con diez segundos menos de vuelo, está en
+The same scene, with ten fewer seconds of flight, lives in
 `examples/scenes/multicam_scenes.py:ChaseScene`.
 
-`NumberPlane` ya ES el mobject (la capa lo recibe tal cual); el `normalize`
-de un punto Float32 y el `cross` / `norm` sobre vectores Float64 se escriben
-a mano (multiplicar por el inverso Float32 de la norma; `_cross`), y
-`atan(s, v[3])` es `scalar_atan2`, el `atan` de dos argumentos.
+`NumberPlane` already IS the mobject (the layer receives it directly);
+`normalize` on a Float32 point and `cross` / `norm` on Float64 vectors
+are written by hand (multiply by the Float32 reciprocal of the norm;
+`_cross`), and `atan(s, v[3])` is `scalar_atan2`, the two-argument `atan`.
 
     bin/janim render examples/demo/11_chase_camera.py -ql
 """
@@ -54,7 +54,7 @@ def knot(t):
 
 
 def normalize32(vector):
-    """El `normalize` de StaticArrays sobre un Point3f: multiplica por el inverso Float32 de la norma."""
+    """StaticArrays' `normalize` on a Point3f: multiply by the Float32 reciprocal of the norm."""
     x, y, z = vector
     length = np.float32(np.sqrt((x * x + y * y) + z * z))
     return (np.float32(1) / length) * vector
@@ -64,7 +64,7 @@ class ChaseCamera(Scene):
     def construct(self):
         self.frame.reorient(-30.0, 66.0, height=9.5)
 
-        # ── el mundo: suelo, puertas, cometa y su estela ─────────────────
+        # ── the world: floor, gates, comet and its trail ─────────────────
         floor = NumberPlane(
             (-4.0, 4.0, 1.0),
             (-4.0, 4.0, 1.0),
@@ -112,16 +112,16 @@ class ChaseCamera(Scene):
 
         world = [floor, *gates, trail, comet]
 
-        # ── las otras dos cámaras ────────────────────────────────────────
+        # ── the other two cameras ────────────────────────────────────────
         cam_chase = CameraFrame()
         cam_chase.reorient(-30.0, 66.0)
         cam_chase.set_frame_height(2.4)
         cam_chase.add_updater(lambda f: f.move_to(comet.get_center()))
 
         cam_map = CameraFrame()
-        cam_map.set_frame_height(7.5)             # cenital: φ = 0 es la planta
+        cam_map.set_frame_height(7.5)             # overhead: φ = 0 is the top view
 
-        # ── el HUD, fijado a pantalla ────────────────────────────────────
+        # ── the HUD, fixed to the screen ────────────────────────────────────
         w_chase = Rectangle(
             width=4.2,
             height=4.2 * 9 / 16,
@@ -161,7 +161,7 @@ class ChaseCamera(Scene):
             ),
         )
 
-        # dos tramos de vuelo: el original y otros diez segundos siguiendo la vuelta
+        # two flight segments: the original and ten more seconds continuing around the orbit
         self.wait(0.5)
         self.play(self.frame.animate.reorient(25.0, 58.0), run_time=11.0)
         self.play(self.frame.animate.reorient(85.0, 64.0), run_time=10.0)
