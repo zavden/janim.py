@@ -22,6 +22,8 @@ updaters esa misma libm determinista, para floats y para arrays enteros.
 - **Python 3.14.**
 - **`ffmpeg`** en el `PATH`, para escribir vídeo.
 - **`latex` y `dvisvgm`** en el `PATH`, para `Tex` y `MathTex`.
+- Una fuente monoespaciada para `Code`: DejaVu Sans Mono, Menlo, Consolas,
+  Liberation Mono, Noto Sans Mono o Courier New.
 - Las fuentes que pidan tus escenas. Los ejemplos usan DejaVu Sans; alguna
   lección pide también Liberation Serif y Liberation Mono.
 
@@ -30,7 +32,7 @@ updaters esa misma libm determinista, para floats y para arrays enteros.
 ```bash
 git clone https://github.com/<usuario>/Janim.py.git
 cd Janim.py
-scripts/bootstrap.sh        # crea .venv/ con numpy, wgpu, glfw y freetype-py
+scripts/bootstrap.sh        # crea .venv/ con numpy, wgpu, glfw, freetype-py y pygments
 ```
 
 `PYTHON=/ruta/a/python3.14 scripts/bootstrap.sh` elige otro intérprete. Antes,

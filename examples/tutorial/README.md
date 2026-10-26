@@ -1,12 +1,12 @@
 # The Janim course
 
-Four courses, 89 runnable lessons, written in Manim syntax. Every lesson is a
+Four courses, 90 runnable lessons, written in Manim syntax. Every lesson is a
 real scene you can render, preview, edit and break; the explanation lives in
 its docstring, next to the code it is about.
 
 | Course | What it covers | Lessons |
 |---|---|---|
-| 1 — Foundations | mobjects, animations, configuration, assets, groups, text and formulas, rate functions, the utility belt, plots, updaters, fields and particles | 33 |
+| 1 — Foundations | mobjects, animations, configuration, assets, groups, text and formulas, rate functions, the utility belt, plots, updaters, fields and particles, source code listings | 34 |
 | 2 — Going deeper | alpha and dt updaters, custom mobjects, custom animations, the camera, simulations, coming from Manim, writing shaders | 14 |
 | 3 — Only in Janim | the layer compositor, blur and glow, masks, glitch and the editor effects, motion blur, and a capstone | 40 |
 | 4 — The complete reference | the shape zoo: every flat constructor, groups and the base types — in progress | 2 |
@@ -87,6 +87,7 @@ as a PNG. A file with several scenes names the lesson's with `SCENE = <class>`.
 | `05_latex_config.py` | `LatexConfig` | the typesetting route: Janim has one, LaTeX |
 | `06_tex_transformations.py` | `TexTransformations` | `TransformMatchingTex`: when it ends the scene holds the target |
 | `07_symbol_by_symbol.py` | `SymbolBySymbol` | `tex[2]`, `tex["x^2"]`, `isolate`; through LaTeX a glyph answers only to `isolate`/`t2c` |
+| `08_code.py` | `CodeLesson` | ManimCE's `Code`: pygments styles, line numbers, the window background; a listing is a parent of glyphs |
 
 ### 4 · `c1_04_animations` — animations
 

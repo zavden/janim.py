@@ -193,6 +193,22 @@ thing to break when a label grows. Sizes are scene units; the nominal frame is
   stays; `edge_to_fix=ORIGIN` re-centres), `Integer(n)`,
   `ChangeDecimalToValue(d, y)`, `ChangingDecimal(d, f)`, `CountInFrom(d, 0)`.
   Text layouts: `Paragraph(*lines, alignment=LEFT)`, `BulletedList(*items)`.
+- `Code(code_string=… | code_file=…, language="python", formatter_style="vim",
+  tab_width=4, add_line_numbers=True, line_numbers_from=1,
+  background="rectangle" | "window", background_config={…},
+  paragraph_config={…})` is ManimCE's listing, with CE's names. pygments
+  (a pinned dependency, loaded only when a `Code` is built) colours it token
+  by token. Parts:
+  `code.code_lines[i][j]` is the j-th VISIBLE glyph of line i (spaces make no
+  glyph), `code.line_numbers`, `code.background` (a rounded rectangle; with
+  `"window"`, three buttons inside it). Every colour comes from the style; a
+  `color` in `paragraph_config` is ignored. The font is the first installed of
+  DejaVu Sans Mono, Menlo, Consolas, Liberation Mono, Noto Sans Mono and
+  Courier New unless `paragraph_config={"font": …}`; `font_size` there is
+  CE's scale (24, the default, is CE's size) and `size=` the em in scene
+  units. Lines sit on their baselines at CE's pitch, so a listing's height
+  depends on its line count, never on its glyphs.
+  `Code.get_styles_list()`, `Code.get_pygments_style(name)`.
 
 ```python
 from janim import *
@@ -633,7 +649,6 @@ bin/janim codecs                      # what the CLI's ffmpeg can do
   motion-blurred still that remains.
 - No path booleans (`Union`, `Intersection`, `Difference`, `Exclusion`);
   `Cutout(shape, *holes)` covers "shape minus shapes".
-- No syntax-highlighted `Code`.
 - Also out: `MarkupText` (no Pango), CE's arrow-tip zoo (an `Arrow` is ONE
   contour with its tip inside), `Graph` (its layouts need networkx), GL's
   widgets and the relics.

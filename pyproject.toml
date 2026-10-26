@@ -9,6 +9,7 @@ dependencies = [
     "wgpu==0.21.0",
     "glfw==2.10.2",
     "freetype-py==2.5.1",
+    "pygments==2.21.0",
 ]
 
 [tool.janim.bootstrap]

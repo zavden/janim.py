@@ -3,6 +3,7 @@
 TEXT_EXPORTS = {}
 for _module, _names in {
     "text.text": "Text TextMobject",
+    "text.code": "Code",
     "text.tex": "Tex MathTex TexText LTex LMathTex TexTemplate tex_source TEX_BASE_PREAMBLE",
     "text.numbers": "DecimalNumber Integer IntegerMobject",
     "core.decor": "Paragraph BulletedList",
