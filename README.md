@@ -193,6 +193,7 @@ English; their original Spanish versions are preserved beside them as
 ## Documentation
 
 - [`llms.txt`](llms.txt): the whole API in one file.
+- [`skills/`](skills/README.md): the procedures for an AI agent working with or on Janim (Claude Code loads them from `.claude/skills/`).
 - [`docs/cli.md`](docs/cli.md): the command line and the live window ([Spanish](docs/cli.es.md)).
 - [`docs/compositor.md`](docs/compositor.md): layers, masks and effects ([Spanish](docs/compositor.es.md)).
 - [`docs/3d.md`](docs/3d.md): surfaces, camera and depth ([Spanish](docs/3d.es.md)).

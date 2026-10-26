@@ -85,11 +85,14 @@ An item leaves this file when it is settled.
 
 ## Testing and release
 
-- **No test suite ships with the repository.** The release was verified with
-  session harnesses: per-frame SHA-256 of every example and demo at 640×360
-  and 10 fps, before and after each port (`Scene(..., frame_tap=...)`;
-  `history/2026-10/LINUX.md`, §6). Turn that into a `tests/` suite with
-  per-route reference hashes, and run it on the three platforms.
+- **No frame-regression suite ships with the repository.** `tests/test_*.py`
+  cover the libm, the surfaces, `Code` and the course-4 objects, and the
+  per-frame SHA-256 harness that verified every port (every example and demo
+  at 640×360 and 10 fps, through `Scene(..., frame_tap=...)`;
+  `history/2026-10/LINUX.md`, §6) now ships as
+  `skills/janim-tests/scripts/frame_hashes.py` (`seal`, `compare`). What is
+  missing is the reference: stored per-route hashes and a `tests/` entry point
+  that compares against them, run on the three platforms.
 - **Not on PyPI.** Installation is a clone plus `scripts/bootstrap.sh`, which
   pins exact versions in `.venv/`. Decide whether to publish a wheel; the
   `[tool.janim.bootstrap]` dependencies would need a home in the metadata.

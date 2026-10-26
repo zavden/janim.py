@@ -189,6 +189,7 @@ bin/janim render examples/demo/03_portals.py -ql
 ## Documentación
 
 - [`llms.txt`](llms.txt): la API entera en un fichero.
+- [`skills/`](skills/README.md): los procedimientos para un agente de IA que trabaja con Janim o sobre Janim (Claude Code los carga desde `.claude/skills/`).
 - [`docs/cli.md`](docs/cli.md): la línea de comandos y la ventana viva.
 - [`docs/compositor.md`](docs/compositor.md): capas, máscaras y efectos.
 - [`docs/3d.md`](docs/3d.md): superficies, cámara y profundidad.
