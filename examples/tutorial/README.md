@@ -1,6 +1,6 @@
 # The Janim course
 
-Four courses, 90 runnable lessons, written in Manim syntax. Every lesson is a
+Four courses, 91 runnable lessons, written in Manim syntax. Every lesson is a
 real scene you can render, preview, edit and break; the explanation lives in
 its docstring, next to the code it is about.
 
@@ -9,7 +9,7 @@ its docstring, next to the code it is about.
 | 1 — Foundations | mobjects, animations, configuration, assets, groups, text and formulas, rate functions, the utility belt, plots, updaters, fields and particles, source code listings | 34 |
 | 2 — Going deeper | alpha and dt updaters, custom mobjects, custom animations, the camera, simulations, coming from Manim, writing shaders | 14 |
 | 3 — Only in Janim | the layer compositor, blur and glow, masks, glitch and the editor effects, motion blur, and a capstone | 40 |
-| 4 — The complete reference | the shape zoo: every flat constructor, groups and the base types — in progress | 2 |
+| 4 — The complete reference | the shape zoo: every flat constructor, groups and the base types; the animation zoo — in progress | 3 |
 
 Courses 1 and 2 follow the shape of a ManimCE/ManimGL course, so a Manim user
 recognises the syllabus; where Janim does something differently, the
@@ -243,12 +243,13 @@ the lessons that need it declare through `PREVIEW_MOTION`.
 
 Courses 1 to 3 choose what to teach. Course 4 is the reference course: it is
 meant to cover every public name of Janim in a lesson that runs. So far it has
-the shape zoo.
+the shape zoo and the first lesson of the animation zoo.
 
 | Lesson | Class | What it teaches |
 |---|---|---|
 | `c4_01_shape_zoo/01_every_flat_shape.py` | `EveryFlatShape` | every flat constructor, in one frame |
 | `c4_01_shape_zoo/02_groups_and_the_base.py` | `GroupsAndTheBase` | `VMobject`, `VGroup`, `Group`, and a path built by hand |
+| `c4_02_animation_zoo/01_composed_animations.py` | `ComposedAnimations` | ten animations composed of others: by words, by letters backwards, with a cursor, `SpiralIn`, the flashes, the `…Around` family, `ClockPassesTime` |
 
 ## Conventions used throughout
 

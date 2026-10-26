@@ -5,6 +5,7 @@ from janim.core.transforms import point3
 from janim.core.mobject import VMobject
 from janim.core.rates import linear, smooth
 from .animation import Animation, clip
+from .composition import AnimationGroup
 
 
 class Rotating(Animation):
@@ -55,3 +56,29 @@ class MoveAlongPath(Animation):
 
     def interpolate_mobject(self, alpha):
         self.mobject.move_to(self.path.quick_point_from_proportion(self.rate_func(clip(alpha))))
+
+
+class ClockPassesTime(AnimationGroup):
+    """Turn a `Clock`'s hands through `hours_passed` hours (GL's).
+
+    The hands are `clock.hour_hand` and `clock.minute_hand`, turned about the
+    clock's centre at the moment the animation is built; play adds the whole
+    clock, as GL's `group=clock` does.
+    """
+
+    def __init__(self, clock, *, run_time=5.0, hours_passed=12.0, rate_func=linear, **kwargs):
+        hour_hand = getattr(clock, "hour_hand", None)
+        minute_hand = getattr(clock, "minute_hand", None)
+        if hour_hand is None or minute_hand is None:
+            raise TypeError("ClockPassesTime needs a Clock: a mobject with hour_hand and minute_hand")
+        center = clock.get_center().copy()
+        hour_radians = -float(hours_passed) * TAU / 12
+        super().__init__(
+            Animation(clock, run_time=run_time),
+            Rotating(hour_hand, hour_radians, axis=OUT, about_point=center),
+            Rotating(minute_hand, 12 * hour_radians, axis=OUT, about_point=center),
+            run_time=run_time,
+            rate_func=rate_func,
+            **kwargs,
+        )
+        self.clock = clock

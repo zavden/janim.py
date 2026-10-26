@@ -167,6 +167,97 @@ def TypeWithCursor(text, cursor, *, run_time=-1, time_per_char=0.06, buff=0.1, *
     return AnimationGroup(typing, follow, run_time=duration)
 
 
+def _word_groups(mobject):
+    """The words of a Text (its glyphs between whitespace), or a group's children."""
+    children = list(mobject.submobjects)
+    if not getattr(mobject, "_plain_text", False):
+        return [mobject[index:index + 1] for index in range(len(children))]
+    words = []
+    start = None
+    index = 0
+    for character in mobject.string:
+        if character.isspace():
+            if start is not None and index > start:
+                words.append(mobject[start:index])
+            start = None
+            continue
+        # A character without a glyph (spaces, or one the font lacks) has no child.
+        if index < len(children) and character in children[index].get_keys():
+            if start is None:
+                start = index
+            index += 1
+    if start is not None and index > start:
+        words.append(mobject[start:index])
+    return words
+
+
+class AddTextWordByWord(ShowIncreasingSubsets):
+    """Show a text one word at a time (GL's signature).
+
+    The words of a `Text` are its glyphs between whitespace; any other group
+    shows one child at a time. ManimGL 1.7.2 groups a `Text` into ONE part
+    (`build_groups` gives a single group: the whole text appears at once)
+    and CE's own docstring calls its version broken; Janim does what the
+    name says.
+    """
+
+    def __init__(self, string_mobject, *, time_per_word=0.2, run_time=-1.0, rate_func=linear, **kwargs):
+        words = _word_groups(string_mobject)
+        if not words:
+            raise ValueError("AddTextWordByWord needs a Text with words, or a group with children")
+        if run_time < 0:
+            run_time = float(time_per_word) * len(words)
+        super().__init__(string_mobject, run_time=run_time, rate_func=rate_func, **kwargs)
+        self.children = words
+
+
+class RemoveTextLetterByLetter(ShowIncreasingSubsets):
+    """Remove a text one glyph at a time, last glyph first (CE's); the text comes back intact."""
+
+    def __init__(self, text, *, run_time=-1, time_per_char=0.06, **kwargs):
+        count = len(text.submobjects)
+        if count == 0:
+            raise ValueError("that mobject has no glyphs to remove — RemoveTextLetterByLetter wants a Text or a Tex, whose children are the glyphs")
+        duration = max(0.5, count * float(time_per_char)) if run_time < 0 else float(run_time)
+        super().__init__(text, **{"run_time": duration, "remover": True, **kwargs})
+
+    def interpolate_mobject(self, alpha):
+        super().interpolate_mobject(1.0 - clip(alpha))
+
+    def finish(self):
+        super().finish()
+        for index, child in enumerate(self.children):
+            set_visible(child, True, self.saved[index] if index < len(self.saved) else None)
+        return self
+
+
+def UntypeWithCursor(text, cursor=None, *, run_time=-1, time_per_char=0.06, buff=0.1, **kwargs):
+    """`RemoveTextLetterByLetter` with a cursor that follows the last glyph left (CE's).
+
+    The cursor ends where the first glyph was, and stays in the scene.
+    Without a cursor it is plain `RemoveTextLetterByLetter`.
+    """
+    from janim.constants import RIGHT
+    from .composition import AnimationGroup
+
+    count = len(text.submobjects)
+    if count == 0:
+        raise ValueError("that mobject has no glyphs to remove")
+    duration = max(0.5, count * float(time_per_char)) if run_time < 0 else float(run_time)
+    erasing = RemoveTextLetterByLetter(text, run_time=duration, time_per_char=time_per_char, **kwargs)
+    if cursor is None:
+        return erasing
+
+    def chase(mob, alpha):
+        shown = min(max(math.ceil((1.0 - alpha) * count), 0), count)
+        if shown == 0:
+            return mob.move_to(text.submobjects[0])
+        return mob.next_to(text.submobjects[shown - 1], RIGHT, buff=buff)
+
+    follow = UpdateFromAlphaFunc(cursor, chase, run_time=duration, rate_func=linear)
+    return AnimationGroup(erasing, follow, run_time=duration)
+
+
 class ShowSubmobjectsOneByOne(ShowIncreasingSubsets):
     def __init__(self, group, **kwargs):
         super().__init__(group, **{"one_at_a_time": True, **kwargs})

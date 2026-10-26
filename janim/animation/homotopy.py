@@ -102,6 +102,17 @@ class ApplyPointwiseFunction(_FunctionalTransform):
         )
 
 
+class ApplyPointwiseFunctionToCenter(_FunctionalTransform):
+    """Move the mobject, unchanged, to `function(its center)` (GL's: a Transform, one second)."""
+
+    def __init__(self, function, mobject, **kwargs):
+        super().__init__(
+            mobject,
+            lambda: animation_copy(mobject).move_to(function(mobject.get_center())),
+            **kwargs,
+        )
+
+
 class ApplyMatrix(ApplyPointwiseFunction):
     def __init__(self, matrix, mobject, *, about_point=ORIGIN, run_time=3.0, **kwargs):
         matrix = np.asarray(matrix, dtype=np.float64)

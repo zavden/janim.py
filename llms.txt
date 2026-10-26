@@ -239,18 +239,29 @@ readout = DecimalNumber(3.14159, num_decimal_places=3, size=0.6)
   `Uncreate`, `Write`/`Unwrite`, `DrawBorderThenFill`, `FadeIn(m, shift=UP,
   scale=1.0)`, `FadeOut`, `VFadeIn`/`VFadeOut` (opacity only),
   `GrowFromCenter`, `GrowArrow`, `SpinInFromNothing`, `ShrinkToCenter`,
-  `AddTextLetterByLetter`. The removers (`FadeOut`, `Uncreate`, `Unwrite`)
-  hand the mobject back INTACT: re-add it and it is all there.
+  `SpiralIn(group, scale_factor=8, fade_in_fraction=0.3)` (every child flies
+  in on a spiral). Text: `AddTextLetterByLetter`, `AddTextWordByWord` (the
+  words of a `Text` are its glyphs between spaces; ManimGL 1.7.2 shows a
+  whole `Text` at once), `RemoveTextLetterByLetter`, `TypeWithCursor(text,
+  cursor)`, `UntypeWithCursor(text, cursor)`. The removers (`FadeOut`,
+  `Uncreate`, `Unwrite`, `RemoveTextLetterByLetter`) hand the mobject back
+  INTACT: re-add it and it is all there.
 - Morphs: `Transform(a, b, path_arc=0)` (never mutates `b`; the scene keeps
   `a` wearing b's shape; different family sizes pad with INVISIBLE copies),
   `ReplacementTransform` (the scene ends holding `b`), `TransformFromCopy`,
   `FadeTransform`, `Swap`, `ApplyMatrix`, `ApplyPointwiseFunction`,
+  `ApplyPointwiseFunctionToCenter(f, m)` (moves m, unchanged, to f(centre)),
   `Homotopy(f(x, y, z, t), m)`, `ApplyWave`, `PhaseFlow` (it INTEGRATES, so
   it is not seekable).
 - Emphasis: `Indicate(m, scale_factor=1.2, color=YELLOW)`, `Flash(target,
   num_lines=12, flash_radius=0.3)`, `Circumscribe(m, buff=0.1)`, `FocusOn`,
-  `Wiggle`, `Blink`, `ShowPassingFlash`, `FlashAround`. Motion: `Rotating(m,
-  angle=TAU, run_time=5)` (arcs), `Rotate(m, PI)`, `MoveAlongPath(m, path)`.
+  `Wiggle`, `Blink`, `ShowPassingFlash`, `FlashAround`, `FlashyFadeIn`,
+  `ShowPassingFlashWithThinningStrokeWidth(m, n_segments=10)`, and on a
+  `SurroundingRectangle`: `ShowPassingFlashAround`,
+  `ShowCreationThenDestructionAround`, `ShowCreationThenFadeAround` (placed
+  when they begin; they do not follow a mobject that moves during them).
+  Motion: `Rotating(m, angle=TAU, run_time=5)` (arcs), `Rotate(m, PI)`,
+  `MoveAlongPath(m, path)`, `ClockPassesTime(clock, hours_passed=12)`.
 - Time: `AnimationGroup(*a, lag_ratio=0, run_time=-1)` (−1 = until the last
   one ends), `LaggedStart(*a, lag_ratio=0.05)`, `LaggedStartMap(FadeIn,
   group, run_time=2.0)`, `Succession(*a)` — its own type because it BEGINS

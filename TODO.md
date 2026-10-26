@@ -62,6 +62,13 @@ An item leaves this file when it is settled.
   a route (RADV, lavapipe, Metal, DX12, WARP), not across them. Reference
   hashes, when they exist, have to be per route.
 
+- **The typing cursor follows each glyph's height.** `TypeWithCursor` and
+  `UntypeWithCursor` place the cursor with `next_to(glyph, RIGHT)`, so it
+  rises and drops with the glyphs (a «g» pulls it down). CE keeps the
+  cursor's own height (`keep_cursor_y=True`) and hides it until the first
+  glyph. Only `c4_02_animation_zoo/01_composed_animations.py` uses them, so
+  changing it now moves the frames of that lesson alone.
+
 ## Janim.py against Janim.jl
 
 - **`Tex` glyph spacing.** Janim.py composes formulas with LaTeX's kerning;

@@ -158,7 +158,12 @@ class Clock(VGroup):
         )
         hour_hand.set_stroke(color, width=stroke_width * 1.4)
         minute_hand.set_stroke(color, width=stroke_width)
-        super().__init__(face, hour_hand, minute_hand, VGroup(*marks), **kwargs)
+        ticks = VGroup(*marks)
+        super().__init__(face, hour_hand, minute_hand, ticks, **kwargs)
+        self.face = face
+        self.hour_hand = hour_hand
+        self.minute_hand = minute_hand
+        self.ticks = ticks
 
 
 class VHighlight(VGroup):
