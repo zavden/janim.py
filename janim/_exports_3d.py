@@ -6,7 +6,7 @@ THREE_D_EXPORTS = {
         "Surface", "ParametricSurface", "Sphere", "Torus", "PlaneXY", "Cylinder", "Cone", "Disk3D",
         "Dot3D", "Line3D", "Arrow3D", "SurfaceMesh", "VGroup3D", "Polyhedron",
         "Tetrahedron", "Octahedron", "Icosahedron", "Dodecahedron", "Square3D",
-        "Cube", "VCube", "Prism", "VPrism", "Prismify", "triangle_indices",
+        "Cube", "VCube", "Prism", "VPrism", "Prismify", "triangle_indices", "ConvexHull3D",
     )
 }
 THREE_D_EXPORTS.update(

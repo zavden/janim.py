@@ -618,6 +618,32 @@ class Polyhedron(VGroup):
             self.apply_depth_test()
 
 
+class ConvexHull3D(Polyhedron):
+    """The convex hull of points in space, as a `Polyhedron` of triangles (CE's).
+
+    The same triangles as CE's QuickHull (checked on CE's examples), each
+    counterclockwise seen from outside, in an order that depends only on the
+    points; CE's comes out of a set. Points within `tolerance` of the hull
+    are left out, so a flat face of four points is two triangles. The other
+    keywords are `Polyhedron`'s style (CE's `faces_config`/`graph_config`
+    have no counterpart: there is no graph of vertices here).
+    """
+
+    def __init__(self, *points, tolerance=1e-5, **kwargs):
+        from .hull3d import convex_hull_triangles
+
+        triangles = convex_hull_triangles(points, tolerance)
+        used = sorted({index for face in triangles for index in face})
+        renumber = {old: new for new, old in enumerate(used)}
+        super().__init__(
+            [points[index] for index in used],
+            [[renumber[index] for index in face] for face in triangles],
+            **kwargs,
+        )
+        self.hull_points = [point3(points[index]) for index in used]
+        self.hull_faces = [[renumber[index] for index in face] for face in triangles]
+
+
 def Tetrahedron(*, edge_length=1.0, **kwargs):
     u = edge_length * math.sqrt(2) / 4
     return Polyhedron(

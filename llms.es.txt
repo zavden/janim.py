@@ -90,7 +90,9 @@ only one, or the one you name as `file.py:Demo`) and call its `construct`.
   drawing itself, on its own updater). `SampleSpace(width=3, height=3)`
   splits by probabilities: `divide_horizontally([0.3])`,
   `divide_vertically(…)`, `get_side_braces_and_labels(["P(A)", …])` (labels
-  through LaTeX), `space[i]` is a part.
+  through LaTeX), `space[i]` is a part. `LabeledPolygram(*rings,
+  label="…", precision=0.01)` puts a `Label` at the pole of inaccessibility
+  (`polygram.pole`, `polygram.radius`; CE's point to the last bit).
 - Grids: `Matrix([[1, 2], [3, 4]], cell=lambda s: Tex(s, size=0.7))`
   (= `MatrixMobject`), `Table`, `DecimalTable`…; `get_entries`, `get_rows`,
   `get_columns`, `get_cell(i, j)` with ONE-based `(row, column)`.
@@ -436,7 +438,8 @@ both = Group(badge, photo)
   and `Prism` are GL's six MESHES, `VCube`/`VPrism` the polygon forms (the
   ones that take a stroke); `Prismify(flat, depth=…)` extrudes;
   `Polyhedron(vertices, faces)` takes ZERO-based faces and carries `Tetrahedron`, `Octahedron`, `Icosahedron`,
-  `Dodecahedron`. `ThreeDModel("file.obj", height=3.0)` loads OBJ/MTL.
+  `Dodecahedron`; `ConvexHull3D(*points)` is the hull as a `Polyhedron` of
+  triangles. `ThreeDModel("file.obj", height=3.0)` loads OBJ/MTL.
 - Points: `DotCloud(points, radius=0.05, color=…, glow_factor=0.0)` is ONE
   draw call however many points; `GlowDots(points, radius=0.2,
   glow_factor=2.0)`, `GlowDot`, `TrueDot`, `PGroup`; `set_colors(colors,

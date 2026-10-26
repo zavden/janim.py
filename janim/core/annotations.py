@@ -21,7 +21,7 @@ from janim.constants import (
 )
 from .algebra import angle_of_vector, norm
 from .mobject import Mobject, VGroup, VMobject
-from .shapes import Arc, Arrow, Dot, Line, Polygon, Rectangle, endpoints
+from .shapes import Arc, Arrow, Dot, Line, Polygon, Polygram, Rectangle, endpoints
 from .transforms import point3
 
 
@@ -410,6 +410,58 @@ class Label(VGroup):
         border = Rectangle(**dimensions).set_fill(opacity=0.0)
         border.set_stroke(box_color, width=stroke_width).move_to(label.get_center())
         super().__init__(background_mob, label, border, **kwargs)
+
+
+class LabeledPolygram(Polygram):
+    """A polygram with a label at its pole of inaccessibility (CE's).
+
+    The pole is the point inside the polygram farthest from every edge,
+    holes included, found by polylabel to `precision` (the same pole as CE,
+    to the last bit); `polygram.pole` is that point and `polygram.radius`
+    its distance to the nearest edge. The label is Janim's `Label`: a string
+    becomes a `Text` (CE's becomes a `MathTex`), a mobject is used as it is.
+    `label_config` goes to `Label` (`buff`, `size`, `color`, `box_color`,
+    `background`, `background_opacity`, `stroke_width`); CE's `box_config`
+    (`color`/`fill_color`, `fill_opacity`, `buff`) and `frame_config`
+    (`color`/`stroke_color`, `stroke_width`, `buff`) are translated to it.
+    A vertex group may repeat its first vertex at the end or not.
+    """
+
+    def __init__(
+        self,
+        *vertex_groups,
+        label,
+        precision=0.01,
+        label_config=None,
+        box_config=None,
+        frame_config=None,
+        **kwargs,
+    ):
+        from .polylabel import polylabel
+
+        groups = [np.asarray(group, dtype=np.float64) for group in vertex_groups]
+        open_groups = [group[:-1] if len(group) > 3 and np.array_equal(group[0], group[-1]) else group for group in groups]
+        super().__init__(*open_groups, **kwargs)
+        options = dict(label_config or {})
+        for key, value in (box_config or {}).items():
+            target = {"color": "background", "fill_color": "background", "fill_opacity": "background_opacity", "buff": "buff"}.get(key)
+            if target is None:
+                raise TypeError(f"LabeledPolygram's box_config does not take {key!r}")
+            if value is not None:
+                options[target] = value
+        for key, value in (frame_config or {}).items():
+            target = {"color": "box_color", "stroke_color": "box_color", "stroke_width": "stroke_width", "buff": "buff"}.get(key)
+            if target is None:
+                raise TypeError(f"LabeledPolygram's frame_config does not take {key!r}")
+            if value is not None:
+                options[target] = value
+        self.label = Label(label, **options)
+        rings = [np.vstack((group, group[:1])) for group in open_groups]
+        cell = polylabel(rings, precision=precision)
+        self.pole = np.array((cell.c[0], cell.c[1], 0.0))
+        self.radius = float(cell.d)
+        self.label.move_to(self.pole)
+        self.add(self.label)
 
 
 class LabeledLine(VGroup):
