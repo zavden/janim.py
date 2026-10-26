@@ -414,6 +414,66 @@ class ArcBetweenPoints(Arc):
         self.put_start_and_end_on(start, end)
 
 
+class TangentialArc(ArcBetweenPoints):
+    """An arc of `radius` tangent to two intersecting lines (CE's).
+
+    `corner=(s1, s2)` picks one of the four corners: each sign says which way
+    to go along the corresponding line from the intersection.
+    """
+
+    def __init__(self, line1, line2, radius, corner=(1, 1), **kwargs):
+        from .annotations import line_intersection
+
+        radius = float(radius)
+        if not radius > 0:
+            raise ValueError("a tangential arc needs a positive radius")
+        self.line1 = line1
+        self.line2 = line2
+        intersection = line_intersection(*line1.get_start_and_end(), *line2.get_start_and_end()).astype(np.float64)
+        first_sign, second_sign = corner
+        first = first_sign * line1.get_unit_vector().astype(np.float64)
+        second = second_sign * line2.get_unit_vector().astype(np.float64)
+        corner_angle = angle_between_vectors(first, second)
+        distance = radius / math.tan(corner_angle / 2)
+        first_point = intersection + distance * first
+        second_point = intersection + distance * second
+        cross = first[0] * second[1] - first[1] * second[0]
+        start, end = (first_point, second_point) if cross < 0 else (second_point, first_point)
+        half_chord = float(np.linalg.norm(end - start)) / 2
+        super().__init__(start, end, angle=2 * math.asin(min(1.0, half_chord / radius)), **kwargs)
+        self.radius = radius
+
+
+class ArcPolygonFromArcs(VMobject):
+    """One closed path through arcs given in order (CE's).
+
+    A gap between an arc's end and the next arc's start is closed with a
+    straight segment, split into as many curves as CE gives it (the arc's
+    curve count times the length ratio, plus one). The arcs stay as children
+    and are drawn too; hide them (`stroke_width=0`) to see only the outline.
+    """
+
+    def __init__(self, *arcs, **kwargs):
+        if not arcs or not all(isinstance(arc, Arc) for arc in arcs):
+            raise ValueError("All ArcPolygon submobjects must be of type Arc/ArcBetweenPoints")
+        super().__init__(**kwargs)
+        self.add(*arcs)
+        self.arcs = list(arcs)
+        self.set_points(arcs[0].points)
+        for index, arc in enumerate(arcs):
+            following = arcs[(index + 1) % len(arcs)]
+            gap_start = arc.get_end().astype(np.float64)
+            gap_end = following.get_start().astype(np.float64)
+            length = float(np.linalg.norm(gap_end - gap_start))
+            arc_length = float(arc.get_arc_length())
+            if length > 1e-6 and arc_length > 0:
+                pieces = int(arc.get_num_curves() * length / arc_length) + 1
+                for step in range(1, pieces + 1):
+                    self.add_line_to(gap_start + (gap_end - gap_start) * (step / pieces))
+            if index + 1 < len(arcs):
+                self.append_points(following.points[1:])
+
+
 class Elbow(VMobject):
     def __init__(self, width=0.2, angle=0.0, **kwargs):
         super().__init__(**kwargs)

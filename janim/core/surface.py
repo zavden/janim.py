@@ -359,6 +359,20 @@ def Torus(*, r1=3.0, r2=1.0, resolution=(101, 101), **kwargs):
     )
 
 
+def Disk3D(*, radius=1.0, u_range=(0.0, 1.0), v_range=(0.0, TAU), resolution=(2, 100), **kwargs):
+    """A flat disc as a mesh: (u cos v, u sin v, 0), then scaled by `radius` (GL's)."""
+    jm = _julia_trig()
+    surface = Surface(
+        lambda u, v: (u * jm.cos(v), u * jm.sin(v), 0.0 * u),
+        u_range=(float(u_range[0]), float(u_range[1])),
+        v_range=(float(v_range[0]), float(v_range[1])),
+        resolution=resolution,
+        vectorized=True,
+        **kwargs,
+    )
+    return surface.scale(float(radius))
+
+
 def PlaneXY(*, x_range=(-3.0, 3.0), y_range=(-3.0, 3.0), resolution=(2, 2), **kwargs):
     """The parametric plane [x0, x1] x [y0, y1] at z = 0."""
     return Surface(

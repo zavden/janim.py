@@ -156,3 +156,38 @@ class Integer(DecimalNumber):
 
 
 IntegerMobject = Integer
+
+
+class Variable(VMobject):
+    """"label = value", the value following a `ValueTracker` (CE's).
+
+    A string label goes through LaTeX (`Tex`, CE's `MathTex`); any mobject is
+    used as it is. The "=" becomes a child of the label, as in CE.
+    `var_type` is `DecimalNumber` (with `num_decimal_places`) or `Integer`;
+    `variable.tracker` is the `ValueTracker` to animate, and
+    `variable.label` and `variable.value` are the two parts.
+    """
+
+    def __init__(self, var, label, var_type=None, num_decimal_places=2, **kwargs):
+        from janim.core.trackers import ValueTracker
+        from .tex import Tex
+
+        var_type = DecimalNumber if var_type is None else var_type
+        if not (isinstance(var_type, type) and issubclass(var_type, DecimalNumber)):
+            raise TypeError("Variable's var_type is DecimalNumber or Integer")
+        super().__init__(**kwargs)
+        self.label = Tex(label) if isinstance(label, str) else label
+        equals = Tex("=").next_to(self.label, RIGHT)
+        self.label.add(equals)
+        self.tracker = ValueTracker(var)
+        if issubclass(var_type, Integer):
+            self.value = var_type(self.tracker.get_value())
+        else:
+            self.value = var_type(
+                self.tracker.get_value(),
+                num_decimal_places=num_decimal_places,
+            )
+        tracker = self.tracker
+        self.value.add_updater(lambda value: value.set_value(tracker.get_value()))
+        self.value.next_to(self.label, RIGHT)
+        self.add(self.label, self.value)

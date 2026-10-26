@@ -16,7 +16,7 @@ for module, names in (
     ("animation.passing", "VShowPassingFlash ShowPassingFlash FlashAround FlashUnder ShowCreationThenDestruction ShowCreationThenFadeOut TurnInsideOut"),
     ("animation.sugar", "FadeToColor ScaleInPlace CyclicReplace Swap CircleIndicate Broadcast BroadcastRipple Blink ShowIncreasingSubsets ShowSubmobjectsOneByOne MaintainPositionRelativeTo AddTextLetterByLetter TypeWithCursor AddTextWordByWord RemoveTextLetterByLetter UntypeWithCursor"),
     ("core.annotations", "SurroundingRectangle Underline"),
-    ("core.trackers", "ValueTracker ComplexValueTracker always_redraw TracedPath"),
+    ("core.trackers", "ValueTracker ComplexValueTracker ExponentialValueTracker always_redraw TracedPath AnimatedBoundary"),
     ("scene.scene", "Scene MovingCameraScene ThreeDScene render render_frame render_frame_motion animation_map describe render_segment render_from render_parallel count_frames"),
     ("scene.checkpoints", "checkpoint_states checkpoint_valid clear_checkpoints"),
 ):

@@ -3,7 +3,7 @@
 THREE_D_EXPORTS = {
     name: "janim.core.surface"
     for name in (
-        "Surface", "ParametricSurface", "Sphere", "Torus", "PlaneXY", "Cylinder", "Cone",
+        "Surface", "ParametricSurface", "Sphere", "Torus", "PlaneXY", "Cylinder", "Cone", "Disk3D",
         "Dot3D", "Line3D", "Arrow3D", "SurfaceMesh", "VGroup3D", "Polyhedron",
         "Tetrahedron", "Octahedron", "Icosahedron", "Dodecahedron", "Square3D",
         "Cube", "VCube", "Prism", "VPrism", "Prismify", "triangle_indices",

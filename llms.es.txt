@@ -70,6 +70,8 @@ only one, or the one you name as `file.py:Demo`) and call its `construct`.
   `Polygon`, `RegularPolygon`, `Triangle`, `Star`, `Arc`, `ArcBetweenPoints`,
   `Annulus`, `Sector`, `AnnularSector`, `Elbow`, `Polygram`,
   `RegularPolygram`, `ConvexHull`, `Polyline`, `CubicBezier`, `ArcPolygon`,
+  `ArcPolygonFromArcs(*arcs)` (one closed path through the arcs; gaps become
+  straight pieces), `TangentialArc(line1, line2, radius, corner=(1, 1))`,
   `Cutout(shape, *holes)` (real holes, wound the other way), `VectorizedPoint`.
 - Lines and points: `Line(a, b, buff=0, path_arc=0)`, `DashedLine`,
   `Arrow(a, b, buff=0.25, thickness=3.0)`, `Vector`, `DoubleArrow`,
@@ -82,7 +84,13 @@ only one, or the one you name as `file.py:Demo`) and call its `construct`.
 - Annotation: `Brace(m, DOWN, buff=0.2)` (a native path, no LaTeX),
   `BraceLabel(m, "text")`, `SurroundingRectangle`, `BackgroundRectangle`,
   `Underline`, `Cross`, `Angle(l1, l2, radius=…, other_angle=…)`,
-  `RightAngle`, `angle_value`, `Title`, `Label`, `Checkmark`, `Clock`.
+  `RightAngle`, `angle_value`, `Title`, `Label`, `Checkmark`, `Clock`
+  (`clock.hour_hand`, `clock.minute_hand`, `clock.ticks`),
+  `AnimatedBoundary(m, colors=…, cycle_rate=0.5)` (an outline that keeps
+  drawing itself, on its own updater). `SampleSpace(width=3, height=3)`
+  splits by probabilities: `divide_horizontally([0.3])`,
+  `divide_vertically(…)`, `get_side_braces_and_labels(["P(A)", …])` (labels
+  through LaTeX), `space[i]` is a part.
 - Grids: `Matrix([[1, 2], [3, 4]], cell=lambda s: Tex(s, size=0.7))`
   (= `MatrixMobject`), `Table`, `DecimalTable`…; `get_entries`, `get_rows`,
   `get_columns`, `get_cell(i, j)` with ONE-based `(row, column)`.
@@ -297,7 +305,11 @@ readout = DecimalNumber(3.14159, num_decimal_places=3, size=0.6)
   `m.always.next_to(other, UP)` repeats the call every frame, and
   `m.f_always.set_x(vt.get_value)` re-evaluates its argument functions.
 - `ValueTracker(x)` (`get_value`, `set_value`, `increment_value`),
-  `ComplexValueTracker(z)`, `always_redraw(f)` (rebuilds with `f()` every
+  `ComplexValueTracker(z)`, `ExponentialValueTracker(x)` (stores log x, so it
+  moves geometrically: halfway from 1 to 100 is 10; ManimGL 1.7.2 reads its
+  constructor's argument as the logarithm, Janim as the value),
+  `Variable(x, "label", var_type=DecimalNumber)` ("label = value" following
+  `variable.tracker`), `always_redraw(f)` (rebuilds with `f()` every
   frame and adopts the result with `become`, so the scene and any group keep
   the SAME object), `TracedPath(m.get_center, stroke_width=2.0,
   time_traced=…, smooth=False)`, `TracingTail`, `UpdateFromAlphaFunc(m,
@@ -419,6 +431,7 @@ both = Group(badge, photo)
   color=…, opacity=1.0, shading=(0.3, 0.2, 0.4))` — the normals travel as a
   second point array, so transforms carry them; `Sphere(radius=…,
   resolution=…)`, `Torus(r1=…, r2=…)`, `Cylinder`, `Cone`, `PlaneXY`,
+  `Disk3D(radius=1)`,
   `Dot3D`, `Line3D`, `Arrow3D`, `Square3D`, `SurfaceMesh(surface)`. `Cube`
   and `Prism` are GL's six MESHES, `VCube`/`VPrism` the polygon forms (the
   ones that take a stroke); `Prismify(flat, depth=…)` extrudes;

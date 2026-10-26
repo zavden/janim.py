@@ -2,7 +2,7 @@
 
 GEOMETRY_EXPORTS = {}
 for _module, _names in {
-    "shapes": "AnnularSector Sector Annulus ArcBetweenPoints Elbow ScreenRectangle FullScreenRectangle FullScreenFadeRectangle VDict Polygram RegularPolygram ConvexHull Polyline CubicBezier ArcPolygon VectorizedPoint",
+    "shapes": "AnnularSector Sector Annulus ArcBetweenPoints TangentialArc ArcPolygonFromArcs Elbow ScreenRectangle FullScreenRectangle FullScreenFadeRectangle VDict Polygram RegularPolygram ConvexHull Polyline CubicBezier ArcPolygon VectorizedPoint",
     "coordinates": "SmallDot Vector VectorMobject DoubleArrow CurvedArrow CurvedDoubleArrow TangentLine StrokeArrow",
     "functions": "ParametricCurve FunctionGraph",
     "axes": "NumberLine UnitInterval Axes NumberPlane ComplexPlane PolarPlane ThreeDAxes tick_range c2p p2c coords_to_point point_to_coords number_to_point point_to_number polar_to_point",
@@ -12,5 +12,6 @@ for _module, _names in {
     "svg": "SVGMobject clip_layers",
     "image": "ImageMobject pixel_size",
     "compositor_types": "Layer Mask",
+    "probability": "SampleSpace",
 }.items():
     GEOMETRY_EXPORTS.update({name: "janim.core." + _module for name in _names.split()})
