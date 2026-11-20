@@ -83,30 +83,7 @@ class GPUCompositor:
             format="rgba16float",
         ) if self.samples == 4 else None
         binding = _binding()
-        self.sampler = self.gpu.device.create_sampler(
-            label="Janim compositor nearest",
-            address_mode_u="repeat",
-            address_mode_v="repeat",
-            address_mode_w="clamp-to-edge",
-            mag_filter="nearest",
-            min_filter="nearest",
-            mipmap_filter="nearest",
-            lod_min_clamp=0.0,
-            lod_max_clamp=32.0,
-            max_anisotropy=1,
-        )
-        self.sampler_linear = self.gpu.device.create_sampler(
-            label="Janim compositor linear",
-            address_mode_u="repeat",
-            address_mode_v="repeat",
-            address_mode_w="clamp-to-edge",
-            mag_filter="linear",
-            min_filter="linear",
-            mipmap_filter="nearest",
-            lod_min_clamp=0.0,
-            lod_max_clamp=32.0,
-            max_anisotropy=1,
-        )
+        self.samplers = {}
         self.layout = self.gpu.device.create_bind_group_layout(
             label="Janim quad layout",
             entries=[
@@ -128,7 +105,7 @@ class GPUCompositor:
         self.encoder = None
         self.live = []
         self.frames = self.quads = self.submits = 0
-        rv.stats.objects += 24 if self.ms is None else 28
+        rv.stats.objects += 22 if self.ms is None else 26
 
     def _check_open(self, what="operation"):
         if self.closed:
@@ -221,8 +198,28 @@ class GPUCompositor:
             self.rv.stats.objects += 1
         return self.pipelines[key]
 
-    def _bind_group(self, first, second, linear=False):
-        key = first, second, linear
+    def _quad_sampler(self, linear, repeat):
+        key = linear, repeat
+        if key not in self.samplers:
+            filtering = "linear" if linear else "nearest"
+            address = "repeat" if repeat else "clamp-to-edge"
+            self.samplers[key] = self.gpu.device.create_sampler(
+                label=f"Janim compositor {filtering} {address}",
+                address_mode_u=address,
+                address_mode_v=address,
+                address_mode_w="clamp-to-edge",
+                mag_filter=filtering,
+                min_filter=filtering,
+                mipmap_filter="nearest",
+                lod_min_clamp=0.0,
+                lod_max_clamp=32.0,
+                max_anisotropy=1,
+            )
+            self.rv.stats.objects += 1
+        return self.samplers[key]
+
+    def _bind_group(self, first, second, sampler):
+        key = first, second, sampler
         if key not in self.bind_groups:
             self.bind_groups[key] = self.gpu.device.create_bind_group(
                 label="Janim quad textures",
@@ -230,7 +227,7 @@ class GPUCompositor:
                 entries=[
                     {"binding": 0, "resource": self.slots[first].view},
                     {"binding": 1, "resource": self.slots[second].view},
-                    {"binding": 2, "resource": self.sampler_linear if linear else self.sampler},
+                    {"binding": 2, "resource": sampler},
                     {"binding": 3, "resource": {"buffer": self.params.buffer, "offset": 0, "size": QUAD_DTYPE.itemsize}},
                 ],
             )
@@ -247,7 +244,9 @@ class GPUCompositor:
             self._flush()
         slot = self.params.push(quad_params() if params is None else params)
         pipeline = self._pipeline(entry, target.format)
-        bind_group = self._bind_group(first, second, linear)
+        # Built-ins filter a finite camera image. Registered shaders retain repeat addressing.
+        sampler = self._quad_sampler(linear, repeat=entry in _USER_SHADERS)
+        bind_group = self._bind_group(first, second, sampler)
         render = self.encoder.begin_render_pass(
             color_attachments=[{
                 "view": target.view,
@@ -509,7 +508,8 @@ class GPUCompositor:
         self.params.close()
         self.modules.clear()
         self.user_generations.clear()
-        self.module = self.pipeline_layout = self.layout = self.sampler = self.sampler_linear = None
+        self.samplers.clear()
+        self.module = self.pipeline_layout = self.layout = None
         if self.referee is not None:
             self.referee.close()
         for slot in self.slots:

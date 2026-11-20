@@ -75,6 +75,11 @@ animación recorren también las capas anidadas. `clear` solo vacía raíces.
 | `Wave()` | amplitude, wavelength, angle, phase | Escena y radianes |
 | `EdgeDetect()` | amount, color, thickness | Factor, color y píxeles |
 
+Cuando un filtro integrado toma una muestra fuera de la imagen de la capa,
+lee el téxel del borde más cercano. Un desenfoque o un halo que toca un lado
+se queda en ese lado. Los shaders registrados con `effect_shader` usan el
+modo de repetición.
+
 Los campos son mutables y pueden cambiar desde un updater. `rate` cuenta
 frames. El ruido mezcla la semilla con el nombre del tipo y el índice de
 frame de la escena; no consulta un reloj externo. Un campo `current_frame`

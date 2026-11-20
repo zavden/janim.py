@@ -4,11 +4,9 @@
 //
 //   group 0 · binding 0  tex_a   the pass's first texture (Tex, Backdrop, Layer, A, Src…)
 //             binding 1  tex_b   its second (Layer, Mask, B, Blurred) — tex_a again when unused
-//             binding 2  samp    nearest + repeat for every pass but the window's, which
-//                                binds the linear + repeat one (GL_REPEAT was GL's
-//                                default on these textures, and BLUR, EDGE and CHROMA
-//                                sample outside [0, 1]: the border of everything blurred
-//                                depends on it)
+//             binding 2  samp    built-in passes clamp to the image edge (linear for
+//                                WINDOW, nearest otherwise). Registered effects retain
+//                                repeat addressing for their own sampling patterns.
 //             binding 3  P       the parameters, one block per pass in a ring with a
 //                                dynamic offset (uniforms.py's ParamArena): four generic
 //                                floats, four more, four ints and the blur's 64 weights

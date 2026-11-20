@@ -75,6 +75,10 @@ the roots.
 | `Wave()` | amplitude, wavelength, angle, phase | Scene units and radians |
 | `EdgeDetect()` | amount, color, thickness | Factor, color and pixels |
 
+Built-in effects sample the nearest edge texel when a filter reaches outside
+the layer image. A blur or bloom touching one side stays on that side.
+Custom shaders registered with `effect_shader` use repeat addressing.
+
 Fields are mutable and can change from an updater. `rate` counts frames.
 Noise mixes the seed with the type name and the scene's frame index; it
 does not consult an external clock. A `current_frame` field receives that
