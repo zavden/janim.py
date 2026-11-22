@@ -81,7 +81,7 @@ only one, or the one you name as `file.py:Demo`) and call its `construct`.
 - Two colour traps, both ManimGL's: `Dot(p, color=BLUE)` stays white — write
   `Dot(p, fill_color=BLUE)` or `.set_fill(BLUE)`; an `Arrow` is drawn by its
   FILL, so its `color=` paints a zero-width stroke — use `fill_color=`.
-- Annotation: `Brace(m, DOWN, buff=0.2)` (a native path, no LaTeX),
+- Annotation: `Brace(m, DOWN, buff=0.2, sharpness=2)` (CE's brace path, filled by `color=`, no LaTeX),
   `BraceLabel(m, "text")`, `SurroundingRectangle`, `BackgroundRectangle`,
   `Underline`, `Cross`, `Angle(l1, l2, radius=…, other_angle=…)`,
   `RightAngle`, `angle_value`, `Title`, `Label`, `Checkmark`, `Clock`

@@ -103,7 +103,7 @@ as a PNG. A file with several scenes names the lesson's with `SCENE = <class>`.
 | Lesson | Class | What it teaches |
 |---|---|---|
 | `01_useful_methods.py` | `UsefulMethods` | `next_to`, `align_to`, `arrange`, `arrange_in_grid`, `surround`; `to_edge` uses the nominal frame |
-| `02_useful_mobjects.py` | `UsefulMobjects` | the shape zoo, annotations, `Angle`, matrices; `Brace` is a native path, not LaTeX |
+| `02_useful_mobjects.py` | `UsefulMobjects` | the shape zoo, annotations, `Angle`, matrices; `Brace` is CE's brace path, native, not LaTeX |
 | `03_useful_animations.py` | `UsefulAnimations` | `Indicate`, `Flash`, `Circumscribe`, `Wiggle`, `FocusOn`, the growers, `UpdateFromAlphaFunc` |
 | `04_extending_janim.py` | `ExtendingJanim` | the extension seams — Manim's "plugins": a function, and a `VMobject` subclass |
 

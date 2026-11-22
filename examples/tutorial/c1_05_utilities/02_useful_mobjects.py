@@ -15,10 +15,12 @@ Live:        TracedPath · ValueTracker · DecimalNumber · always_redraw
              Dot3D · Line3D · Arrow3D
 
 Two of these are better than Manim's, for the same reason both times — the
-renderer is ours. `Brace` is a native stretchable PATH, not
-`Tex(r"\\underbrace{\\qquad}")`, so it needs no LaTeX and its strokes stay even
-at any width. `Annulus` is two subpaths turning in opposite directions, and
-the hole comes free from winding fill — no mask, no boolean op.
+renderer is ours. `Brace` is ManimCE's own brace path (two curls, a tip,
+straight runs that grow with the span) built natively, not GL's
+`Tex(r"\\underbrace{\\qquad}")`, so it needs no LaTeX and its curls keep their
+shape at any span; `color=` fills it. `Annulus` is two subpaths turning in
+opposite directions, and the hole comes free from winding fill — no mask, no
+boolean op.
 
     python examples/tutorial/c1_05_utilities/02_useful_mobjects.py
 """

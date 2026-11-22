@@ -7,7 +7,9 @@ import numpy as np
 from janim.constants import (
     BLACK,
     BLUE,
+    DL,
     DOWN,
+    DR,
     FRAME_WIDTH,
     GREY_A,
     GREY_C,
@@ -50,47 +52,96 @@ class Underline(Line):
         self.set_stroke(color=color, width=stroke_width)
 
 
+# ManimCE's brace path (MIT; Copyright (c) the Manim Community Developers), as CE's Brace
+# writes it: an outline with two curls and a tip, in SVG coordinates (y grows downwards).
+# {0} and {1} are the straight runs, +run and -run; with no run the path is
+# _BRACE_MIN_WIDTH wide.
+_BRACE_PATH = (
+    "m0.01216 0c-0.01152 0-0.01216 6.103e-4 -0.01216 0.01311v0.007762c0.06776 "
+    "0.122 0.1799 0.1455 0.2307 0.1455h{0}c0.03046 3.899e-4 0.07964 0.00449 "
+    "0.1246 0.02636 0.0537 0.02695 0.07418 0.05816 0.08648 0.07769 0.001562 "
+    "0.002538 0.004539 0.002563 0.01098 0.002563 0.006444-2e-8 0.009421-2.47e-"
+    "5 0.01098-0.002563 0.0123-0.01953 0.03278-0.05074 0.08648-0.07769 0.04491"
+    "-0.02187 0.09409-0.02597 0.1246-0.02636h{0}c0.05077 0 0.1629-0.02346 "
+    "0.2307-0.1455v-0.007762c-1.78e-6 -0.0125-6.365e-4 -0.01311-0.01216-0.0131"
+    "1-0.006444-3.919e-8 -0.009348 2.448e-5 -0.01091 0.002563-0.0123 0.01953-"
+    "0.03278 0.05074-0.08648 0.07769-0.04491 0.02187-0.09416 0.02597-0.1246 "
+    "0.02636h{1}c-0.04786 0-0.1502 0.02094-0.2185 0.1256-0.06833-0.1046-0.1706"
+    "-0.1256-0.2185-0.1256h{1}c-0.03046-3.899e-4 -0.07972-0.004491-0.1246-0.02"
+    "636-0.0537-0.02695-0.07418-0.05816-0.08648-0.07769-0.001562-0.002538-"
+    "0.004467-0.002563-0.01091-0.002563z"
+)
+_BRACE_MIN_WIDTH = 0.90552
+
+
 class Brace(VMobject):
+    """ManimCE's brace beside `mobject`, its tip pointing along `direction`: a filled path, no LaTeX.
+
+    The path, its stretch and its placement are CE's, measured against CE 0.22 in
+    tests/test_brace.py. It spans the mobject's extent across `direction`, its open side sits
+    `buff` away from the mobject, and it is 0.273 deep whatever the span. The path is laid out
+    `sharpness` times longer than the span and squeezed back: 2 (CE's default) gives tight curls and
+    a sharp tip, the same at every span from about 0.45 up; 1 keeps the path's own proportions.
+    `color` fills it; there is no outline unless `stroke_width` asks for one.
+    """
+
     def __init__(
         self,
         mobject,
         direction=DOWN,
         buff=0.2,
+        sharpness=2.0,
         color=WHITE,
-        thickness=0.18,
-        tip_length=0.3,
+        fill_opacity=1.0,
         stroke_width=0.0,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        direction = point3(direction)
-        perpendicular = point3((-direction[1], direction[0], 0))
-        span = abs(mobject.get_width() * perpendicular[0]) + abs(mobject.get_height() * perpendicular[1])
-        half = 0.5 * max(float(span), 4 * float(tip_length))
-        thickness, tip = float(thickness), float(tip_length)
-        self.set_points_as_corners(
-            (
-                (-half, 0, 0),
-                (-half + tip, -thickness, 0),
-                (-tip, -thickness, 0),
-                (0, -2 * thickness, 0),
-                (tip, -thickness, 0),
-                (half - tip, -thickness, 0),
-                (half, 0, 0),
-            ),
-        )
-        self.set_stroke(color, width=max(stroke_width, 3.0)).set_fill(opacity=0)
         from ._atan32 import atan2
+        from .svg import _PointBuffer, _path_data
 
-        theta = float(atan2(direction[1], direction[0]))
-        self.rotate(theta + math.pi / 2)
-        self.move_to(mobject.get_bounding_box_point(direction))
-        self.shift(np.float32(buff + 2 * thickness) * direction)
+        sharpness = float(sharpness)
+        if not sharpness > 0:
+            raise ValueError(f"sharpness must be positive, got {sharpness!r}")
+        direction = point3(direction)
+        if not norm(direction) > 0:
+            raise ValueError("a brace needs a nonzero direction")
+        # CE turns the scene so that `direction` points DOWN, measures the mobject there, lays the
+        # brace under it and turns both back; here a turned copy is measured, the mobject stays put
+        angle = math.pi - float(atan2(direction[0], direction[1]))
+        turned = mobject.copy().rotate(-angle, about_point=ORIGIN)
+        left, right = turned.get_corner(DL), turned.get_corner(DR)
+        width = float(right[0]) - float(left[0])
+        if not width > 1e-6:          # float32 noise of a span that is not there
+            raise ValueError("the mobject has no extent across the brace's direction: nothing to span")
+        run = max(0.0, (width * sharpness - _BRACE_MIN_WIDTH) / 2)
+
+        control = []
+
+        def upright(x, y):
+            control.append((x, -y))
+            return np.array((x, -y, 0), dtype=np.float32)
+
+        buffer = _PointBuffer()
+        _path_data(buffer, _BRACE_PATH.format(run, -run), upright)
+        # CE's box is the extent of the path's cubic control points; the two quadratics that stand
+        # for each cubic here reach a little further (3.5e-4), so the box comes from the path itself
+        (x0, y0), (x1, y1) = np.min(control, axis=0), np.max(control, axis=0)
+        points = np.array(buffer.points, dtype=np.float64)
+        self._tip_index = int(np.argmin(np.hypot(points[:, 0] - 0.5 * (x0 + x1), points[:, 1] - y0)))
+        points[:, 0] = float(left[0]) + (points[:, 0] - x0) * (width / (x1 - x0))
+        points[:, 1] = float(left[1]) - float(buff) + (points[:, 1] - y1)
+        points[:, 2] = float(left[2])
+        self.set_points(points.astype(np.float32))
+        self.rotate(angle, about_point=ORIGIN)
+        self.set_fill(color, fill_opacity).set_stroke(color, width=stroke_width)
 
     def get_tip(self):
         if not self.has_points():
             raise ValueError("this brace has no points")
-        return self.points[(len(self.points) - 1) // 2].copy()
+        if self._tip_index >= len(self.points):
+            raise ValueError("this brace's points were replaced: its tip is no longer known")
+        return self.points[self._tip_index].copy()
 
     def get_direction(self):
         vector = (self.get_tip() - self.get_center()).astype(np.float64)

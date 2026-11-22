@@ -35,7 +35,7 @@ t = Text(
 - No complex shaping: Latin, Greek and Cyrillic are the honest frontier.
 - Layouts: `Paragraph(*lines, alignment=LEFT, line_spacing=0.3)`,
   `BulletedList(*items)`, `Title`, `Label(text)` (a boxed label),
-  `Brace(m, DOWN)` (a native path, no LaTeX), `BraceLabel(m, "text", DOWN)`.
+  `Brace(m, DOWN)` (CE's brace path, filled, no LaTeX), `BraceLabel(m, "text", DOWN)`.
 
 ## 2 · Tex: one route, real LaTeX
 
