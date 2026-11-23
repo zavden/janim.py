@@ -207,6 +207,20 @@ def test_around_family_runs_its_gesture_on_a_rectangle():
         animation.finish()
 
 
+def test_clock_passes_time_lasts_its_whole_run_time():
+    """ManimGL 1.7.2 measured on itself (2026-11-22): ClockPassesTime(clock, run_time=10,
+    hours_passed=3) has the hour hand at 67.5, 45 and 22.5 degrees at alpha 0.25, 0.5 and
+    0.75; the hands used to stop at 5 s (45, 0, 0)."""
+    clock = Clock(radius=1.0)
+    animation = ClockPassesTime(clock, run_time=10, hours_passed=3)
+    animation.begin()
+    for alpha, degrees in ((0.25, 67.5), (0.5, 45.0), (0.75, 22.5)):
+        animation.interpolate(alpha)
+        tip = clock.hour_hand.points[-1] - clock.get_center()
+        assert abs(np.degrees(np.arctan2(tip[1], tip[0])) - degrees) < 1e-3, (alpha, tip)
+    animation.finish()
+
+
 def test_clock_passes_time_turns_both_hands():
     clock = Clock(radius=1.0)
     assert clock.hour_hand is clock.submobjects[1] and clock.minute_hand is clock.submobjects[2]

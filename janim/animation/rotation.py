@@ -73,10 +73,14 @@ class ClockPassesTime(AnimationGroup):
             raise TypeError("ClockPassesTime needs a Clock: a mobject with hour_hand and minute_hand")
         center = clock.get_center().copy()
         hour_radians = -float(hours_passed) * TAU / 12
+        # The hands turn for the whole run_time. GL's Rotatings keep their own 5 s and its
+        # group stretches them over its run_time; the clock's own Animation here (GL's
+        # group=clock) would make the group as long as run_time and stop 5-second hands
+        # halfway through a 10-second run, so they take the run_time too.
         super().__init__(
             Animation(clock, run_time=run_time),
-            Rotating(hour_hand, hour_radians, axis=OUT, about_point=center),
-            Rotating(minute_hand, 12 * hour_radians, axis=OUT, about_point=center),
+            Rotating(hour_hand, hour_radians, axis=OUT, about_point=center, run_time=run_time),
+            Rotating(minute_hand, 12 * hour_radians, axis=OUT, about_point=center, run_time=run_time),
             run_time=run_time,
             rate_func=rate_func,
             **kwargs,
