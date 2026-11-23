@@ -192,7 +192,14 @@ class ShowPassingFlashAround(AnimationOnSurroundingRectangle):
 
 
 class ShowCreationThenDestructionAround(AnimationOnSurroundingRectangle):
+    """The rectangle is drawn and undrawn, then it leaves the stage: in GL the gesture is
+    a ShowPassingFlash, a remover, and a collapsed rectangle left behind would pile up one
+    per call."""
+
     RectAnimationType = ShowCreationThenDestruction
+
+    def __init__(self, mobject, **kwargs):
+        super().__init__(mobject, **{"remover": True, **kwargs})
 
 
 class ShowCreationThenFadeAround(AnimationOnSurroundingRectangle):

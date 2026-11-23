@@ -207,6 +207,30 @@ def test_around_family_runs_its_gesture_on_a_rectangle():
         animation.finish()
 
 
+def test_creation_then_destruction_around_leaves_the_stage():
+    """GL's gesture is a ShowPassingFlash, a remover: the rectangle leaves the stage, back in
+    one piece, instead of staying behind collapsed (one more per call)."""
+
+    class Stage:
+        def __init__(self):
+            self.removed = []
+
+        def remove(self, *mobjects):
+            self.removed.extend(mobjects)
+            return self
+
+    circle = Circle()
+    animation = ShowCreationThenDestructionAround(circle)
+    animation.begin()
+    animation.interpolate(0.5)
+    animation.finish()
+    stage = Stage()
+    animation.clean_up_from_scene(stage)
+    assert animation.rectangle in stage.removed
+    points = animation.rectangle.points
+    assert not np.allclose(points, points[0]), "the rectangle comes back whole"
+
+
 def test_clock_passes_time_lasts_its_whole_run_time():
     """ManimGL 1.7.2 measured on itself (2026-11-22): ClockPassesTime(clock, run_time=10,
     hours_passed=3) has the hour hand at 67.5, 45 and 22.5 degrees at alpha 0.25, 0.5 and

@@ -42,6 +42,14 @@ An item leaves this file when it is settled.
 
 ## Behaviour and performance
 
+- **`ShowCreationThenDestruction` stays on the stage, collapsed.** It is a
+  `ShowCreation` with `there_and_back`, not a remover, so after it the
+  mobject is still in the scene with every point on its start: invisible,
+  and a later `add` shows nothing. In ManimGL it is a `ShowPassingFlash`
+  (`indication.py:284`), a remover whose `finish` puts the path back whole as it
+  leaves. `ShowCreationThenDestructionAround` already leaves (2026-11-22);
+  making the plain one GL's changes an existing name, so it waits for a
+  decision. Janim.jl has the same item.
 - **The farm does not speed up simulation-bound scenes.** `-j N` renders
   segment k in its own process, but every process simulates the scene from
   t = 0 to the end of its segment (the updaters run for every frame; only the
