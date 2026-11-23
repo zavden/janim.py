@@ -245,7 +245,10 @@ readout = DecimalNumber(3.14159, num_decimal_places=3, size=0.6)
   on the same mobject in one `play` share `m.target`: the LAST one wins. It
   works on `vt.animate.set_value(10)`, on `self.frame`, and on any mobject
   that implements the interpolation contract.
-- Creation: `ShowCreation`/`Create` (a group staggers: `lag_ratio=1.0`),
+- Creation: `ShowCreation`/`Create` (a group staggers: `lag_ratio=1.0`;
+  `by_length=True` moves the pen at a steady speed along each path's arc
+  length instead of giving every curve the same time, as GL does; `Uncreate`
+  takes it too),
   `Uncreate`, `Write`/`Unwrite`, `DrawBorderThenFill`, `FadeIn(m, shift=UP,
   scale=1.0)`, `FadeOut`, `VFadeIn`/`VFadeOut` (opacity only),
   `GrowFromCenter`, `GrowArrow`, `SpinInFromNothing`, `ShrinkToCenter`,

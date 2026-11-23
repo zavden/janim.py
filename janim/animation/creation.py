@@ -10,12 +10,73 @@ from .animation import Animation, animation_copy, clip, families
 from .transform import _FunctionalTransform
 
 
+_ARC_SAMPLES = 16
+
+
+def arc_length_table(points):
+    """The cumulative arc length of a path, sampled `_ARC_SAMPLES` times per curve.
+
+    Entry k is the length from the start of the path to curve k // S at t = (k % S) / S
+    (S = `_ARC_SAMPLES`), measured along the chords between samples. A curve whose handle
+    sits on its first anchor counts zero: that is the jump from one subpath to the next,
+    which the stroke shader never draws (its `p0 == p1` guard)."""
+    pts = np.asarray(points, dtype=np.float64)
+    count = len(pts) // 2
+    t = np.arange(_ARC_SAMPLES + 1, dtype=np.float64) / _ARC_SAMPLES
+    w0 = ((1 - t) * (1 - t))[None, :, None]
+    w1 = (2 * (1 - t) * t)[None, :, None]
+    w2 = (t * t)[None, :, None]
+    a0 = pts[0:2 * count:2][:, None, :]
+    handle = pts[1:2 * count:2][:, None, :]
+    a1 = pts[2:2 * count + 1:2][:, None, :]
+    samples = w0 * a0 + w1 * handle + w2 * a1
+    steps = samples[:, 1:] - samples[:, :-1]
+    chords = np.sqrt(steps[..., 0] * steps[..., 0] + steps[..., 1] * steps[..., 1] + steps[..., 2] * steps[..., 2])
+    chords[np.all(a0[:, 0] == handle[:, 0], axis=1)] = 0
+    return np.concatenate(([0.0], np.cumsum(chords.reshape(-1))))
+
+
+def proportion_at_length(table, alpha):
+    """The proportion `pointwise_become_partial` takes (by curve count) that draws the
+    fraction `alpha` of the path's LENGTH, given its `arc_length_table`. Between two samples
+    the parameter is interpolated linearly; a path of length zero keeps `alpha`."""
+    total = table[-1]
+    if alpha <= 0 or alpha >= 1 or not total > 0:
+        return alpha
+    target = alpha * total
+    k = int(np.searchsorted(table, target, side="right")) - 1
+    k = min(max(k, 0), len(table) - 2)
+    step = table[k + 1] - table[k]
+    fraction = (target - table[k]) / step if step > 0 else 0.0
+    return (k + fraction) / (len(table) - 1)
+
+
 class ShowCreation(Animation):
-    def __init__(self, mobject, **kwargs):
+    """Draw a mobject as if by a pen: each path grows from its start to its end.
+
+    By default the pen spends the same time on every curve of a path, as ManimGL's does,
+    so it slows down along a short curve (a rounded corner) and speeds up along a long one.
+    `by_length=True` moves it at a steady speed along the path's arc length instead (per
+    path: across the members of a group, `lag_ratio` still decides who starts when).
+    `Create` is the same class; `Uncreate` takes `by_length` too.
+    """
+
+    def __init__(self, mobject, *, by_length=False, **kwargs):
         super().__init__(mobject, **{"lag_ratio": 1.0, **kwargs})
+        self.by_length = bool(by_length)
+        self._arc_tables = {}
+
+    def begin(self):
+        self._arc_tables = {}
+        return super().begin()
 
     def interpolate_submobject(self, submobject, starting_submobject, alpha):
         if isinstance(submobject, VMobject):
+            if self.by_length:
+                table = self._arc_tables.get(id(starting_submobject))
+                if table is None:
+                    table = self._arc_tables[id(starting_submobject)] = arc_length_table(starting_submobject.points)
+                alpha = proportion_at_length(table, alpha)
             submobject.pointwise_become_partial(starting_submobject, 0, alpha)
 
     def finish(self):

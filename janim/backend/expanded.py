@@ -150,8 +150,9 @@ def joint_vectors_of(mobject, normal):
     incoming[2:2 * count + 1:2] = second
     outgoing[:2 * count:2] = first
     outgoing[1:2 * count:2] = second
+    ends = mobject.get_subpath_end_indices() if len(points) else ()
     start = 0
-    for end in mobject.get_subpath_end_indices() if len(points) else ():
+    for end in ends:
         if start != end:
             if np.array_equal(mobject.points[start], mobject.points[end]):
                 incoming[start] = outgoing[end - 1]
@@ -162,7 +163,82 @@ def joint_vectors_of(mobject, normal):
         start = end + 2
     # one call over both halves: the kernel is element by element, so the
     # stacked result is the two results side by side at half the overhead
-    return np.concatenate((outgoing[:, 1], incoming[:, 1])), np.concatenate((outgoing[:, 0], incoming[:, 0]))
+    y = np.concatenate((outgoing[:, 1], incoming[:, 1]))
+    x = np.concatenate((outgoing[:, 0], incoming[:, 0]))
+    # A side of zero length has no direction, and atan2(0, 0) = 0 used to turn it into a
+    # turn that is not there. `pointwise_become_partial` keeps the point count and
+    # collapses every curve past the visible end onto that end (and, with a > 0, every curve
+    # before the start onto the start): the visible end met a (0, 0) vector, its angle
+    # became minus the incoming direction, and the stroke grew a corner there, the spike at
+    # the tip of a thick stroke while `Create` draws it. Only anchors are read (a curve's
+    # two ends); a path with no zero side at an anchor, the common case, stops here with
+    # the bits it always had. Compared in the plane of the angle, with a tolerance far
+    # below any visible length (1e-9 units).
+    zero = x * x + y * y < 1e-18
+    if zero[0:n:2].any() or zero[n::2].any():
+        incoming, outgoing = _vectors_past_zero_segments(points, mobject.points, ends)
+        y = np.concatenate((outgoing[:, 1], incoming[:, 1]))
+        x = np.concatenate((outgoing[:, 0], incoming[:, 0]))
+        _no_turn_at_zero_sides(y, x, x * x + y * y < 1e-18, n)
+    return y, x
+
+
+def _vectors_past_zero_segments(points, original, ends):
+    """`joint_vectors_of`'s incoming and outgoing vectors when some segment has no length:
+    a side whose segment has none takes the nearest segment WITH length along its subpath,
+    going round a closed one. A run of collapsed curves inside a path (an annular sector's
+    inner arc of radius 0 sits at its centre as six curves of one point) then leaves the
+    true corner on both of its sides. Where there is none, the collapsed tail or head of a
+    partial path, which ends an open subpath, or a subpath of no length at all, the side
+    stays zero and `_no_turn_at_zero_sides` gives it the other side's direction. With no
+    zero segment this is the plain construction of `joint_vectors_of`, bit for bit."""
+    n = len(points)
+    count = (n - 1) // 2
+    segments = points[1:2 * count + 1] - points[:2 * count]
+    has_length = segments[:, 0] * segments[:, 0] + segments[:, 1] * segments[:, 1] >= 1e-18
+    incoming = np.zeros_like(points)
+    outgoing = np.zeros_like(points)
+    if not has_length.any():
+        return incoming, outgoing  # all collapsed (a member Create has not reached yet): no turns
+    incoming[1:2 * count + 1] = segments
+    outgoing[:2 * count] = segments
+    start = 0
+    for end in ends:
+        if start != end:
+            length = end - start
+            run = segments[start:end]
+            usable = has_length[start:end]
+            positions = np.arange(length)
+            # the first segment with length at or after i, and the last one at or before i
+            ahead = np.minimum.accumulate(np.where(usable, positions, length)[::-1])[::-1]
+            behind = np.maximum.accumulate(np.where(usable, positions, -1))
+            closed = np.array_equal(original[start], original[end])
+            if closed:
+                ahead = np.where(ahead == length, ahead[0], ahead)
+                behind = np.where(behind < 0, behind[-1], behind)
+            found_ahead = (ahead < length)[:, None]
+            found_behind = (behind >= 0)[:, None]
+            outgoing[start:end] = np.where(found_ahead, run[np.minimum(ahead, length - 1)], 0.0)
+            incoming[start + 1:end + 1] = np.where(found_behind, run[np.maximum(behind, 0)], 0.0)
+            if closed:
+                incoming[start] = incoming[end]
+                outgoing[end] = outgoing[start]
+            else:
+                incoming[start] = outgoing[start]
+                outgoing[end] = incoming[end]
+        start = end + 2
+    return incoming, outgoing
+
+
+def _no_turn_at_zero_sides(y, x, zero, n):
+    """In the stacked (outgoing, incoming) halves of `joint_vectors_of`, a zero
+    side takes the other side's vector (both zero: both stay zero)."""
+    zero_out, zero_in = zero[:n], zero[n:]
+    for stacked in (y, x):
+        outgoing, incoming = stacked[:n], stacked[n:]
+        original_out = outgoing[zero_in]
+        outgoing[zero_out] = incoming[zero_out]
+        incoming[zero_in] = original_out
 
 
 _CURVE_INDICES = {}
