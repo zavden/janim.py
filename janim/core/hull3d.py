@@ -3,6 +3,14 @@
 import numpy as np
 
 
+def _dots(vectors, normals):
+    """Row by row dot products written out in one fixed order, (x·a + y·b) + z·c, as
+    Janim.jl writes them. NumPy's `@`, `np.dot` and `einsum` hand the sum to BLAS or to
+    SIMD kernels whose order, and use of FMA, depend on the machine: one ulp there decides
+    which of two equally far points seeds the hull of a cube, and with it the triangles."""
+    return (vectors[..., 0] * normals[..., 0] + vectors[..., 1] * normals[..., 1]) + vectors[..., 2] * normals[..., 2]
+
+
 def convex_hull_triangles(points, tolerance=1e-5):
     """The triangles of the convex hull of `points`, as index triples.
 
@@ -28,7 +36,7 @@ def convex_hull_triangles(points, tolerance=1e-5):
     if np.linalg.norm(np.cross(pts[third] - pts[first], direction)) / np.linalg.norm(direction) <= tolerance:
         raise ValueError("the points are collinear; use Line for a segment")
     normal = np.cross(pts[second] - pts[first], pts[third] - pts[first])
-    heights = (pts - pts[first]) @ normal / np.linalg.norm(normal)
+    heights = _dots(pts - pts[first], normal) / np.linalg.norm(normal)
     fourth = int(np.argmax(np.abs(heights)))
     if abs(heights[fourth]) <= tolerance:
         raise ValueError("the points are coplanar; use ConvexHull for a flat hull")
@@ -43,7 +51,7 @@ def convex_hull_triangles(points, tolerance=1e-5):
     faces = [(first, second, third), (first, second, fourth), (first, third, fourth), (second, third, fourth)]
     origins, normals = planes(faces)
     faces = [
-        (face[0], face[2], face[1]) if np.dot(inside - origin, normal) > 0 else face
+        (face[0], face[2], face[1]) if _dots(inside - origin, normal) > 0 else face
         for face, origin, normal in zip(faces, origins, normals)
     ]
     origins, normals = planes(faces)
@@ -52,7 +60,7 @@ def convex_hull_triangles(points, tolerance=1e-5):
     for index in range(len(pts)):
         if index in seeded:
             continue
-        distances = np.einsum("ij,ij->i", pts[index] - origins, normals)
+        distances = _dots(pts[index] - origins, normals)
         mask = distances > tolerance
         if not mask.any():
             continue

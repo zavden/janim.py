@@ -220,6 +220,29 @@ def test_convex_hull_3d_is_a_polyhedron_of_its_triangles():
     assert corners <= {tuple(np.round(np.asarray(point, dtype=np.float32), 5)) for point in FIFTEEN}
 
 
+ROTATED_CUBE = [
+    (1.2823408459715693, 3.435179340320226, 2.3878907882245457),
+    (1.42574215025347, 3.8294314126535904, -1.0005345148047657),
+    (3.4761454386204407, -0.5219703217397516, -1.4200564219906753),
+    (3.33274413433854, -0.9162223940731162, 1.9683688810386364),
+    (0.2675079803728697, 0.6451073647699143, -1.4200564219906753),
+    (4.634379608501041, 2.662353726143924, -1.0005345148047657),
+    (4.490978304219141, 2.26810165381056, 2.3878907882245457),
+    (0.12410667609096881, 0.2508552924365499, 1.9683688810386364),
+]
+
+
+def test_a_rotated_cube_is_seeded_the_same_on_every_machine():
+    """Several corners of a cube are equally far from the seed plane, so one ulp picks the
+    fourth seed and with it the triangles of every face. The dot products are written out
+    in one order (Janim.jl's), not left to BLAS (`@` gave a different seed here, through an
+    FMA kernel, 2026-11-22): the same faces, in the same order, as Janim.jl's."""
+    from janim.core.hull3d import convex_hull_triangles
+
+    faces = [tuple(int(i) for i in face) for face in convex_hull_triangles(ROTATED_CUBE)]
+    assert faces == [(0, 1, 4), (2, 4, 1), (4, 2, 3), (2, 1, 5), (1, 0, 5), (3, 2, 5), (0, 3, 6), (3, 5, 6), (5, 0, 6), (0, 4, 7), (4, 3, 7), (3, 0, 7)], faces
+
+
 def main():
     failures = 0
     for name, test in sorted(globals().items()):
