@@ -270,6 +270,9 @@ readout = DecimalNumber(3.14159, num_decimal_places=3, size=0.6)
   `SurroundingRectangle`: `ShowPassingFlashAround`,
   `ShowCreationThenDestructionAround`, `ShowCreationThenFadeAround` (placed
   when they begin; they do not follow a mobject that moves during them).
+  `Wiggle` restarts every frame from the starting pose (images and surfaces
+  too) and its swell moves points only: no scale side effect (a
+  DecimalNumber's size, strokes that grow with a subclass) survives it.
   Motion: `Rotating(m, angle=TAU, run_time=5)` (arcs), `Rotate(m, PI)`,
   `MoveAlongPath(m, path)`, `ClockPassesTime(clock, hours_passed=12)`.
 - Time: `AnimationGroup(*a, lag_ratio=0, run_time=-1)` (−1 = until the last

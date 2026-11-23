@@ -91,12 +91,24 @@ class Wiggle(Animation):
         self.n_wiggles = operator.index(n_wiggles)
 
     def interpolate_mobject(self, alpha):
+        # Every frame starts again from the starting pose. Every member with points is put
+        # back, an image or a surface as well as a path (as Rotate does), or a non-path member
+        # would accumulate the turn and the swell frame after frame and end displaced.
         for mob, start in self.families:
             if isinstance(mob, VMobject) and isinstance(start, VMobject):
                 mob.set_points(start.points)
+            elif mob.has_points() and start.has_points():
+                for destination, source in zip(mob._point_arrays(), start._point_arrays()):
+                    destination[:] = source
+                mob.note_changed_data()
         alpha = self.rate_func(clip(alpha))
         center = self.starting_mobject.get_bounding_box_point(ORIGIN)
-        self.mobject.scale(1 + (self.scale_value - 1) * there_and_back(alpha), about_point=center)
+        # A wiggle is a passing pose that ends where it began, so its swell moves points only:
+        # scale() would also run every member's scale side effects (a DecimalNumber's font
+        # size, a subclass that thickens its strokes with its size), which no point restore
+        # undoes, so they would compound once per frame and outlive the animation.
+        factor = np.float32(1 + (self.scale_value - 1) * there_and_back(alpha))
+        self.mobject._scale(factor, center, ORIGIN)
         self.mobject.rotate(self.rotation_angle * math.sin(self.n_wiggles * math.pi * alpha), about_point=center)
 
 
